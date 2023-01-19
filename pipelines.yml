@@ -1,6 +1,6 @@
 schedules:
-- cron: '0 1 1-10 * *'
-  displayName: 1am on the first-tenth of the month
+- cron: '0 1 * * *'
+  displayName: 1am on the first-tenth of the month CHANGE FROM * TO 1-10
   branches:
     include:
     - master
