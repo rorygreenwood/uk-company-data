@@ -5,11 +5,11 @@ import mysql.connector
 import os
 import logging
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
-from utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
+from utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 from fragment_work import parse_fragment, load_fragment
 
 logger = logging.getLogger()
-logging.basicConfig(level=logging.INFO,
+logging.basicConfig(level=logger.info,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
@@ -23,20 +23,24 @@ schema = 'iqblade'
 cursor = db.cursor()
 t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
-logging.info('downloading file')
+logger.info('downloading file')
 ch_file, ch_upload_date = collect_companieshouse_file()
 str_ch_file = str(ch_file)
-logging.info('unzipping file')
+logger.info('unzipping file')
 unzipped_ch_file = unzip_ch_file(ch_file)
 fragment_ch_file(f'../file_downloader/files/{unzipped_ch_file}')
 fragment_list = os.listdir('../file_downloader/files/fragments/')
 os.remove(f'../file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
-    logging.info(fragment)
+    logger.info(fragment)
+    st = time.time()
     parse_fragment(f'../file_downloader/files/fragments/{fragment}')
     load_fragment(cursor, db)
-    logging.info('------')
+    logger.info('------')
     os.remove(f'../file_downloader/files/fragments/{fragment}')
+    et = time.time()
+    final_time = et-st
+    logger.info(f'parse time for this iteration: {final_time}')
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
