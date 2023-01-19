@@ -1,6 +1,6 @@
 import datetime
 import shutil
-
+import time
 import mysql.connector
 import os
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
@@ -18,12 +18,11 @@ cursor = db.cursor()
 t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
 print('downloading file')
-ch_file = collect_companieshouse_file()
+ch_file, ch_upload_date = collect_companieshouse_file()
 str_ch_file = str(ch_file)
 print('unzipping file')
 unzipped_ch_file = unzip_ch_file(ch_file)
 fragment_ch_file(f'../file_downloader/files/{unzipped_ch_file}')
-
 fragment_list = os.listdir('../file_downloader/files/fragments/')
 os.remove(f'../file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
@@ -34,6 +33,6 @@ for fragment in fragment_list:
     os.remove(f'../file_downloader/files/fragments/{fragment}')
 
 # when done, update filetracker
-filetracker_tup = (str_ch_file, datetime.datetime.now(), datetime.datetime.now(), datetime.datetime.now())
-cursor.execute("""insert into BasicCompanyData_filetracker (filename, lastModified, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""", filetracker_tup)
+filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
+cursor.execute("""insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""", filetracker_tup)
 db.commit()
