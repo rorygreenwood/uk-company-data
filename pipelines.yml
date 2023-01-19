@@ -1,0 +1,19 @@
+schedules:
+- cron: '0 1 1-10 * *'
+  displayName: 1am on the first-tenth of the month
+  branches:
+    include:
+    - master
+  always: True
+pr: none
+trigger: none
+
+pool: 'Default'
+
+steps:
+- script: pip install -r requirements.txt
+  displayName: install requirements
+- script: |
+    cd file_parser
+    python3 main.py
+  displayName: Execute the file
