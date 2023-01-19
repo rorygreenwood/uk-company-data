@@ -25,6 +25,7 @@ unzipped_ch_file = unzip_ch_file(ch_file)
 fragment_ch_file(f'../file_downloader/files/{unzipped_ch_file}')
 
 fragment_list = os.listdir('../file_downloader/files/fragments/')
+os.remove(f'../file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
     print(fragment)
     parse_fragment(f'../file_downloader/files/fragments/{fragment}')
@@ -34,5 +35,5 @@ for fragment in fragment_list:
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, datetime.datetime.now(), datetime.datetime.now(), datetime.datetime.now())
-cursor.execute("""insert into BasicCompanyData_filetracker (filename, lastModified, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""")
+cursor.execute("""insert into BasicCompanyData_filetracker (filename, lastModified, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""", filetracker_tup)
 db.commit()
