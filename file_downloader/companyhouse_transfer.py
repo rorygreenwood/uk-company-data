@@ -9,9 +9,8 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
-def collect_companieshouse_file():
+def collect_companieshouse_file(firstDayOfMonth):
     # todo generate a date and check it against filetracker, if that date already exists, end the script
-    firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
     logger.info(f'set date as {firstDayOfMonth}')
     filename = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     logger.info(f'set filename as {filename}')
@@ -26,4 +25,3 @@ def collect_companieshouse_file():
             # logger.info(f'writing chunk {chunkcount}')
             fd.write(chunk)
     return filename, firstDayOfMonth
-

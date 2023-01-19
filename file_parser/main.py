@@ -8,10 +8,10 @@ from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 from fragment_work import parse_fragment, load_fragment
 
-logger = logging.getLogger()
-logging.basicConfig(level=logger.info,
-                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+logger = logging.getLogger()
 
 db = mysql.connector.connect(
     host=os.environ.get('PREPRODHOST'),
@@ -24,7 +24,18 @@ cursor = db.cursor()
 t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
 logger.info('downloading file')
-ch_file, ch_upload_date = collect_companieshouse_file()
+firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
+# verify that a new file needs to be downloaded
+verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
+if verif_check:
+    print('file exists, pass')
+    pipeline_title = 'No Companies House File'
+    pipeline_message = f'Pipeline closed for today'
+    pipeline_hexcolour = '#8f0d1a'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
+
+ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
 str_ch_file = str(ch_file)
 logger.info('unzipping file')
 unzipped_ch_file = unzip_ch_file(ch_file)
@@ -49,5 +60,5 @@ db.commit()
 
 pipeline_title = 'Companies House File loaded'
 pipeline_message = f'File Date: {ch_upload_date}'
-pipeline_hexcolour = '#4798e2'
+pipeline_hexcolour = '#62a832'
 pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)

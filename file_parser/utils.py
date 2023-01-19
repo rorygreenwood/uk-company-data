@@ -1,3 +1,4 @@
+import datetime
 import logging
 import os
 import zipfile
@@ -6,13 +7,13 @@ import json
 from filesplit.split import Split
 
 
-def date_check(file_date, cursor):
+def date_check(file_date: datetime.date, cursor):
     cursor.execute("select * from BasicCompanyData_filetracker where ch_upload_date = %s", (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
-        return 1
+        return True
     else:
-        return 0
+        return False
 
 
 def unzip_ch_file(file_name):
