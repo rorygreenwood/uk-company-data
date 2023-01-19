@@ -10,7 +10,6 @@ logging.basicConfig(level=logging.INFO,
 
 
 def collect_companieshouse_file(firstDayOfMonth):
-    # todo generate a date and check it against filetracker, if that date already exists, end the script
     logger.info(f'set date as {firstDayOfMonth}')
     filename = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     logger.info(f'set filename as {filename}')

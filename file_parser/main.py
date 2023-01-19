@@ -28,7 +28,7 @@ firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today(
 # verify that a new file needs to be downloaded
 verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 if verif_check:
-    print('file exists, pass')
+    logger.info('file exists, pass')
     pipeline_title = 'No Companies House File'
     pipeline_message = f'Pipeline closed for today'
     pipeline_hexcolour = '#8f0d1a'
