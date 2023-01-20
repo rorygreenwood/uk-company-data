@@ -12,7 +12,7 @@ from file_parser.fragment_work import parse_fragment, load_fragment
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
-
+print(os.environ.values())
 host = os.environ.get('PREPRODHOST')
 user = os.environ.get('USER')
 passwd = os.environ.get('PASS')
