@@ -49,15 +49,18 @@ fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
 fragment_list = os.listdir('file_downloader/files/fragments/')
 os.remove(f'file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
-    logger.info(fragment)
-    st = time.time()
-    parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd, db=database)
-    load_fragment(cursor, db)
-    logger.info('------')
-    os.remove(f'file_downloader/files/fragments/{fragment}')
-    et = time.time()
-    final_time = et-st
-    logger.info(f'parse time for this iteration: {final_time}')
+    if fragment != 'fragments.txt':
+        logger.info(fragment)
+        st = time.time()
+        parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd, db=database)
+        load_fragment(cursor, db)
+        logger.info('------')
+        os.remove(f'file_downloader/files/fragments/{fragment}')
+        et = time.time()
+        final_time = et-st
+        logger.info(f'parse time for this iteration: {final_time}')
+    else:
+        pass
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
