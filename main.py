@@ -45,7 +45,7 @@ ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
 str_ch_file = str(ch_file)
 logger.info('unzipping file')
 unzipped_ch_file = unzip_ch_file(ch_file)
-fragment_ch_file(f'../file_downloader/files/{unzipped_ch_file}')
+fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
 fragment_list = os.listdir('file_downloader/files/fragments/')
 os.remove(f'../file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
