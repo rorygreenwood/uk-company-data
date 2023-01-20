@@ -12,7 +12,6 @@ def collect_companieshouse_file(firstDayOfMonth):
     filename = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     logger.info(f'set filename as {filename}')
     baseurl = 'http://download.companieshouse.gov.uk/' + filename
-    'BasicCompanyDataAsOneFile-2022-12-01.zip'
     logger.info(f'sending request using url: {baseurl}')
     req = r.get(baseurl, stream=True)
     with open('../file_downloader/files/' + filename, 'wb') as fd:
