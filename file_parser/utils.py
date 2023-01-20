@@ -28,7 +28,7 @@ def unzip_ch_file(file_name):
 def fragment_ch_file(file_name):
     split = Split(file_name, 'file_downloader/files/fragments/')
     split.bylinecount(linecount=50000, includeheader=True)
-    os.remove('../file_downloader/files/fragments/manifest')
+    os.remove('file_downloader/files/fragments/manifest')
 
 
 def pipeline_messenger(title, text, hexcolour):
