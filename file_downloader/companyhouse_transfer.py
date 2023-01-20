@@ -18,6 +18,6 @@ def collect_companieshouse_file(firstDayOfMonth):
         chunkcount = 0
         for chunk in req.iter_content(chunk_size=100000):
             chunkcount += 1
-            # logger.info(f'writing chunk {chunkcount}')
+            logger.info(f'writing chunk {chunkcount}')
             fd.write(chunk)
     return filename, firstDayOfMonth
