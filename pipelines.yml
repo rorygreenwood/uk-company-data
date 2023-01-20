@@ -14,5 +14,5 @@ steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
 - script:
-    python3 "fileparser/main.py"
+    python3 "/fileparser/main.py"
   displayName: Execute the file
