@@ -13,6 +13,11 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
+host = os.environ.get('PREPRODHOST')
+user = os.environ.get('USER')
+passwd = os.environ.get('PASS')
+database = os.environ.get('DATABASE')
+print(host, user, passwd, database)
 db = mysql.connector.connect(
     host=os.environ.get('PREPRODHOST'),
     user=os.environ.get('USER'),
