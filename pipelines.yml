@@ -13,7 +13,6 @@ pool: 'Default'
 steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
-- script: |
-    cd file_parser
-    python3 main.py
+- script:
+    python3 fileparser/main.py
   displayName: Execute the file

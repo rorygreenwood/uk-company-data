@@ -1,8 +1,6 @@
-import datetime
-import requests as r
-import boto3
-import sys
 import logging
+
+import requests as r
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
