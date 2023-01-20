@@ -49,6 +49,7 @@ fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
 fragment_list = os.listdir('file_downloader/files/fragments/')
 os.remove(f'file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
+    print(fragment)
     if fragment != 'fragments.txt':
         logger.info(fragment)
         st = time.time()
