@@ -1,5 +1,6 @@
 import datetime
 import shutil
+import sys
 import time
 import mysql.connector
 import os
@@ -13,16 +14,16 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 print(os.environ.values())
-host = os.environ.get('PREPRODHOST')
-user = os.environ.get('USER')
-passwd = os.environ.get('PASS')
-database = os.environ.get('DATABASE')
+host = sys.argv[1]
+user = sys.argv[2]
+passwd = sys.argv[3]
+database = sys.argv[4]
 print(host, user, passwd, database)
 db = mysql.connector.connect(
-    host=os.environ.get('PREPRODHOST'),
-    user=os.environ.get('USER'),
-    passwd=os.environ.get('PASS'),
-    database=os.environ.get('DATABASE')
+    host=host,
+    user=user,
+    passwd=passwd,
+    database=database
 )
 schema = 'iqblade'
 cursor = db.cursor()

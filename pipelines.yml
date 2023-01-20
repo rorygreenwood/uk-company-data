@@ -7,12 +7,13 @@ schedules:
   always: True
 pr: none
 trigger: none
-
+variables:
+- group: hgdata-pipeline-variables
 pool: 'Default'
 
 steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
 - script:
-    python3 main.py
+    python3 main.py $(preprodhost) $(adminuser) $(adminpass) $(database)
   displayName: Execute the file
