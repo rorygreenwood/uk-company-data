@@ -51,7 +51,7 @@ os.remove(f'file_downloader/files/{unzipped_ch_file}')
 for fragment in fragment_list:
     logger.info(fragment)
     st = time.time()
-    parse_fragment(f'file_downloader/files/fragments/{fragment}')
+    parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd, db=database)
     load_fragment(cursor, db)
     logger.info('------')
     os.remove(f'file_downloader/files/fragments/{fragment}')

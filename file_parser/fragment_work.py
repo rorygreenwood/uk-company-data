@@ -5,8 +5,8 @@ import pandas as pd
 from locker import dtype_dict
 
 
-def parse_fragment(fragment):
-    constring = f'mysql://{os.environ.get("USER")}:{os.environ.get("PASS")}@{os.environ.get("PREPRODHOST")}:3306/{os.environ.get("DATABASE")}'
+def parse_fragment(fragment, host, user, passwd, db):
+    constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     dbEngine = sqlalchemy.create_engine(constring)
 
     df = pd.read_csv(fragment, encoding='utf-8', dtype=dtype_dict)
