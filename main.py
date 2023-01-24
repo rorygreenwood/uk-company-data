@@ -47,13 +47,13 @@ verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 #     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 #     quit()
 #
-if len(os.listdir('file_downloader/files/fragments')) == 1:
-    ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
-    str_ch_file = str(ch_file)
-    logger.info('unzipping file')
-    unzipped_ch_file = unzip_ch_file(ch_file)
-    fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
-    os.remove(f'file_downloader/files/{unzipped_ch_file}')
+
+ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
+str_ch_file = str(ch_file)
+logger.info('unzipping file')
+unzipped_ch_file = unzip_ch_file(ch_file)
+fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
+os.remove(f'file_downloader/files/{unzipped_ch_file}')
 
 fragment_list = os.listdir('file_downloader/files/fragments/')
 for fragment in fragment_list:
