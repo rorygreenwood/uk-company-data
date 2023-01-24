@@ -17,7 +17,9 @@ def parse_fragment(fragment, host, user, passwd, db, cursor, cursordb):
     df['Date_of_insert'] = datetime.datetime.today()
     df['number_of_employees'] = None
     df['phone_number'] = ''
-    df.set_axis(dtype_dict_columns_output, copy=False, axis=1)
+    # may change to this line after deprecations
+    # df = df.set_axis(dtype_dict_columns_output, copy=False, axis=1)
+    df.set_axis(dtype_dict_columns_output, inplace=True, axis=1)
     df.to_sql(name='raw_companies_house_input_stage_df', con=dbEngine, if_exists='append', index=False,
               schema='iqblade')
     cursor.execute("""insert into raw_companies_house_input_stage_test_DA797 select * from raw_companies_house_input_stage_df
