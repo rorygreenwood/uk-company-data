@@ -1,60 +1,204 @@
+import mysql.connector
+
 dtype_dict = {
-    'CompanyName': str,
-    ' CompanyNumber': str,
-    'RegAddress.CareOf': str,
-    'RegAddress.POBox': str,
-    'RegAddress.AddressLine1': str,
-    ' RegAddress.AddressLine2': str,
-    'RegAddress.PostTown': str,
-    'RegAddress.County': str,
-    'RegAddress.Country': str,
-    'RegAddress.PostCode': str,
+    'company_name': str,
+    'company_number': str,
+    'RegAddress_CareOf': str,
+    'RegAddress_POBox': str,
+    'reg_address_line1': str,
+    'reg_address_line2': str,
+    'reg_address_posttown': str,
+    'reg_address_county': str,
+    'RegAddress_Country': str,
+    'reg_address_postcode': str,
     'CompanyCategory': str,
-    'CompanyStatus': str,
-    'CountryOfOrigin': str,
+    'company_status': str,
+    'country_of_origin': str,
     'DissolutionDate': str,
     'IncorporationDate': str,
-    'Accounts.AccountRefDay': str,
-    'Accounts.AccountRefMonth': str,
-    'Accounts.NextDueDate': str,
-    'Accounts.LastMadeUpDate': str,
-    'Accounts.AccountCategory': str,
-    'Returns.NextDueDate': str,
-    'Returns.LastMadeUpDate': str,
-    'Mortgages.NumMortCharges': str,
-    'Mortgages.NumMortOutstanding': str,
-    'Mortgages.NumMortPartSatisfied': str,
-    'Mortgages.NumMortSatisfied': str,
-    'SICCode.SicText_1': str,
-    'SICCode.SicText_2': str,
-    'SICCode.SicText_3': str,
-    'SICCode.SicText_4': str,
-    'LimitedPartnerships.NumGenPartners': str,
-    'LimitedPartnerships.NumLimPartners': str,
+    'Accounts_AccountRefDay': str,
+    'Accounts_AccountRefMonth': str,
+    'Accounts_NextDueDate': str,
+    'Accounts_LastMadeUpDate': str,
+    'Accounts_AccountCategory': str,
+    'Returns_NextDueDate': str,
+    'Returns_LastMadeUpDate': str,
+    'Mortgages_NumMortCharges': str,
+    'Mortgages_NumMortOutstanding': str,
+    'Mortgages_NumMortPartSatisfied': str,
+    'Mortgages_NumMortSatisfied': str,
+    'sic_text_1': str,
+    'sic_text_2': str,
+    'SICCode_SicText_3': str,
+    'SICCode_SicText_4': str,
+    'LimitedPartnerships_NumGenPartners': str,
+    'LimitedPartnerships_NumLimPartners': str,
     'URI': str,
-    'PreviousName_1.CONDATE': str,
-    ' PreviousName_1.CompanyName': str,
-    ' PreviousName_2.CONDATE': str,
-    ' PreviousName_2.CompanyName': str,
-    'PreviousName_3.CONDATE': str,
-    ' PreviousName_3.CompanyName': str,
-    'PreviousName_4.CONDATE': str,
-    ' PreviousName_4.CompanyName': str,
-    'PreviousName_5.CONDATE': str,
-    ' PreviousName_5.CompanyName': str,
-    'PreviousName_6.CONDATE': str,
-    ' PreviousName_6.CompanyName': str,
-    'PreviousName_7.CONDATE': str,
-    ' PreviousName_7.CompanyName': str,
-    'PreviousName_8.CONDATE': str,
-    ' PreviousName_8.CompanyName': str,
-    'PreviousName_9.CONDATE': str,
-    ' PreviousName_9.CompanyName': str,
-    'PreviousName_10.CONDATE': str,
-    ' PreviousName_10.CompanyName': str,
+    'PreviousName_1_CONDATE': str,
+    'PreviousName_1_CompanyName': str,
+    'PreviousName_2_CONDATE': str,
+    'PreviousName_2_CompanyName': str,
+    'PreviousName_3_CONDATE': str,
+    'PreviousName_3_CompanyName': str,
+    'PreviousName_4_CONDATE': str,
+    'PreviousName_4_CompanyName': str,
+    'PreviousName_5_CONDATE': str,
+    'PreviousName_5_CompanyName': str,
+    'PreviousName_6_CONDATE': str,
+    'PreviousName_6_CompanyName': str,
+    'PreviousName_7_CONDATE': str,
+    'PreviousName_7_CompanyName': str,
+    'PreviousName_8_CONDATE': str,
+    'PreviousName_8_CompanyName': str,
+    'PreviousName_9_CONDATE': str,
+    'PreviousName_9_CompanyName': str,
+    'PreviousName_10_CONDATE': str,
+    'PreviousName_10_CompanyName': str,
     'ConfStmtNextDueDate': str,
-    ' ConfStmtLastMadeUpDate': str,
-    'org_id': str,
-    'fragment_name': str,
+    'ConfStmtLastMadeUpDate': str,
+    'Date_Of_Insert': str,
+    'SourceFile': str,
+    'phone_number': str,
+    'number_of_employees': str
 
 }
+
+# columns in SQL table
+dtype_dict_columns_output = [
+    'company_name',
+    'company_number',
+    'RegAddress_CareOf',
+    'RegAddress_POBox',
+    'reg_address_line1',
+    'reg_address_line2',
+    'reg_address_posttown',
+    'reg_address_county',
+    'RegAddress_Country',
+    'reg_address_postcode',
+    'CompanyCategory',
+    'company_status',
+    'country_of_origin',
+    'DissolutionDate',
+    'IncorporationDate',
+    'Accounts_AccountRefDay',
+    'Accounts_AccountRefMonth',
+    'Accounts_NextDueDate',
+    'Accounts_LastMadeUpDate',
+    'Accounts_AccountCategory',
+    'Returns_NextDueDate',
+    'Returns_LastMadeUpDate',
+    'Mortgages_NumMortCharges',
+    'Mortgages_NumMortOutstanding',
+    'Mortgages_NumMortPartSatisfied',
+    'Mortgages_NumMortSatisfied',
+    'sic_text_1',
+    'sic_text_2',
+    'SICCode_SicText_3',
+    'SICCode_SicText_4',
+    'LimitedPartnerships_NumGenPartners',
+    'LimitedPartnerships_NumLimPartners',
+    'URI',
+    'PreviousName_1_CONDATE',
+    'PreviousName_1_CompanyName',
+    'PreviousName_2_CONDATE',
+    'PreviousName_2_CompanyName',
+    'PreviousName_3_CONDATE',
+    'PreviousName_3_CompanyName',
+    'PreviousName_4_CONDATE',
+    'PreviousName_4_CompanyName',
+    'PreviousName_5_CONDATE',
+    'PreviousName_5_CompanyName',
+    'PreviousName_6_CONDATE',
+    'PreviousName_6_CompanyName',
+    'PreviousName_7_CONDATE',
+    'PreviousName_7_CompanyName',
+    'PreviousName_8_CONDATE',
+    'PreviousName_8_CompanyName',
+    'PreviousName_9_CONDATE',
+    'PreviousName_9_CompanyName',
+    'PreviousName_10_CONDATE',
+    'PreviousName_10_CompanyName',
+    'ConfStmtNextDueDate',
+    'ConfStmtLastMadeUpDate',
+    'Date_Of_Insert',
+    'SourceFile',
+    'phone_number',
+    'number_of_employees']
+
+# columns in csv
+dtype_dict_columns_input = [
+    'CompanyName'
+    , 'CompanyNumber'
+    , '`RegAddress.CareOf`'
+    , '`RegAddress.POBox`'
+    , '`RegAddress.AddressLine1`'
+    , '` RegAddress.AddressLine2`'
+    , '`RegAddress.PostTown`'
+    , '`RegAddress.County`'
+    , '`RegAddress.Country`'
+    , '`RegAddress.PostCode`'
+    , 'CompanyCategory'
+    , 'CompanyStatus'
+    , 'CountryOfOrigin'
+    , 'DissolutionDate'
+    , 'IncorporationDate'
+    , '`Accounts.AccountRefMonth`'
+    , '`Accounts.AccountRefDay`'
+    , '`Accounts.NextDueDate`'
+    , '`Accounts.LastMadeUpDate`'
+    , '`Accounts.AccountCategory`'
+    , '`Returns.NextDueDate`'
+    , '`Returns.LastMadeUpDate`'
+    , '`Mortgages.NumMortCharges`'
+    , '`Mortgages.NumMortOutstanding`'
+    , '`Mortgages.NumMortPartSatisfied`'
+    , '`Mortgages.NumMortSatisfied`'
+    , '`SICCode.SicText_1`'
+    , '`SICCode.SicText_2`'
+    , '`SICCode.SicText_3`'
+    , '`SICCode.SicText_4`'
+    , '`LimitedPartnerships.NumGenPartners`'
+    , '`LimitedPartnerships.NumLimPartners`'
+    , 'URI'
+    , '`PreviousName_1.CONDATE`'
+    , '` PreviousName_1.CompanyName`'
+    , '` PreviousName_2.CONDATE`'
+    , '` PreviousName_2.CompanyName`'
+    , '`PreviousName_3.CONDATE`'
+    , '` PreviousName_3.CompanyName`'
+    , '`PreviousName_4.CONDATE`'
+    , '` PreviousName_4.CompanyName`'
+    , '`PreviousName_5.CONDATE`'
+    , '` PreviousName_5.CompanyName`'
+    , '`PreviousName_6.CONDATE`'
+    , '` PreviousName_6.CompanyName`'
+    , '`PreviousName_7.CONDATE`'
+    , '` PreviousName_7.CompanyName`'
+    , '`PreviousName_8.CONDATE`'
+    , '` PreviousName_8.CompanyName`'
+    , '`PreviousName_9.CONDATE`'
+    , '` PreviousName_9.CompanyName`'
+    , '`PreviousName_10.CONDATE`'
+    , '` PreviousName_10.CompanyName`'
+    , 'ConfStmtNextDueDate'
+    , '` ConfStmtLastMadeUpDate`'
+    , 'Date_Of_Insert'
+    , 'SourceFile'
+    , 'phone_number'
+    , 'number_of_employees'
+]
+
+dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
+                   range(len(dtype_dict_columns_input))}
+print(dtype_dict_comp)
+
+def connect_preprod():
+    db = mysql.connector.connect(
+        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
+        user='rory',
+        passwd='Me._7;cBsqQ$]JX}',
+        database='iqblade'
+    )
+
+    cursor = db.cursor()
+    return cursor, db
