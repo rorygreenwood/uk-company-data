@@ -9,6 +9,9 @@ from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 from file_parser.fragment_work import parse_fragment, upsert_sic, upsert_address
 from locker import connect_preprod
+from post_insert_updates_address import mass_update_address
+from post_insert_updates_sic import mass_update_sic_codes
+from post_inserts_organisation import write_to_org, update_org_website, update_org_active
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
@@ -69,8 +72,11 @@ for fragment in fragment_list:
         logger.info(f'parse time for this iteration: {final_time}')
     else:
         pass
+
+# update raw companies house
 upsert_sic(cursor=cursor, db=db)
 upsert_address(cursor=cursor, db=db)
+
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
 cursor.execute("""insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""", filetracker_tup)

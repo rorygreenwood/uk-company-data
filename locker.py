@@ -190,7 +190,7 @@ dtype_dict_columns_input = [
 
 dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
                    range(len(dtype_dict_columns_input))}
-print(dtype_dict_comp)
+
 
 def connect_preprod():
     db = mysql.connector.connect(
