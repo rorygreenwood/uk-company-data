@@ -1,5 +1,6 @@
 from locker import connect_preprod
 import re
+from file_parser.utils import pipeline_messenger
 
 cursor, db = connect_preprod()
 
@@ -21,6 +22,11 @@ def mass_update_sic_codes(cursor, db):
             """insert into sic_code (code, organisation_id, company_number) VALUES (%s, %s, %s)""",
             (sic_code, org_id, cnumber))
         db.commit()
+    rowcount = len(res)
+    pipeline_title = 'Successful Parsing of Addresses '
+    pipeline_message = f'total rows affected: {rowcount}'
+    pipeline_hexcolour = '#83eb34'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 
 
 mass_update_sic_codes(cursor, db)

@@ -1,4 +1,5 @@
 from locker import connect_preprod
+from file_parser.utils import pipeline_messenger
 
 cursor, db = connect_preprod()
 
@@ -27,6 +28,32 @@ def update_org_website(cursor, db):
     db.commit()
 
 
-write_to_org(cursor, db)
-update_org_website(cursor, db)
-update_org_active(cursor, db)
+try:
+    write_to_org(cursor, db)
+except Exception as e:
+    pipeline_title = 'Error on post_inserts_organsation'
+    pipeline_message = f'write_to_org: {e}'
+    pipeline_hexcolour = '#83eb34'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
+try:
+    update_org_website(cursor, db)
+except Exception as e:
+    pipeline_title = 'Error on post_inserts_organsation'
+    pipeline_message = f'update_org_website: {e}'
+    pipeline_hexcolour = '#83eb34'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
+try:
+    update_org_active(cursor, db)
+except Exception as e:
+    pipeline_title = 'Error on post_inserts_organsation'
+    pipeline_message = f'update_org_active: {e}'
+    pipeline_hexcolour = '#83eb34'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
+
+pipeline_title = 'Organisation Updates successful'
+pipeline_message = f''
+pipeline_hexcolour = '#83eb34'
+pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)

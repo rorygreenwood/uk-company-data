@@ -2,7 +2,7 @@
 # company up in companies house updating/inserting as they find companies without this info
 # based on results from companies house
 import re
-
+from file_parser.utils import pipeline_messenger
 from locker import connect_preprod
 
 cursor, db = connect_preprod()
@@ -29,6 +29,11 @@ def mass_update_address(cursor, db):
         from raw_companies_house_input_stage where company_number = %s""", (cnum,))
         print('insert done')
         db.commit()
+    rowcount = len(res)
+    pipeline_title = 'Successful Parsing of Addresses '
+    pipeline_message = f'total rows affected: {rowcount}'
+    pipeline_hexcolour = '#83eb34'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 
 
 # mass_update_sic_codes(cursor, db)
