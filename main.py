@@ -1,17 +1,11 @@
 import datetime
-import shutil
-import sys
+import logging
+import os
 import time
 import mysql.connector
-import os
-import logging
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 from file_parser.fragment_work import parse_fragment, upsert_sic, upsert_address
-from locker import connect_preprod
-from post_insert_updates_address import mass_update_address
-from post_insert_updates_sic import mass_update_sic_codes
-from post_inserts_organisation import write_to_org, update_org_website, update_org_active
+from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
@@ -50,25 +44,27 @@ verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 #     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 #     quit()
 #
-
-ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
-str_ch_file = str(ch_file)
-logger.info('unzipping file')
-unzipped_ch_file = unzip_ch_file(ch_file)
-fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
-os.remove(f'file_downloader/files/{unzipped_ch_file}')
-
 fragment_list = os.listdir('file_downloader/files/fragments/')
+if len(fragment_list) == 0:
+    ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
+    str_ch_file = str(ch_file)
+    logger.info('unzipping file')
+    unzipped_ch_file = unzip_ch_file(ch_file)
+    fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
+    os.remove(f'file_downloader/files/{unzipped_ch_file}')
+    fragment_list = os.listdir('file_downloader/files/fragments/')
+# fragment_list = os.listdir('file_downloader/files/fragments/')
 for fragment in fragment_list:
     print(fragment)
     if fragment != 'fragments.txt':
         logger.info(fragment)
         st = time.time()
-        parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd, db=database, cursor=cursor, cursordb=db)
+        parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd, db=database,
+                       cursor=cursor, cursordb=db)
         logger.info('------')
         os.remove(f'file_downloader/files/fragments/{fragment}')
         et = time.time()
-        final_time = et-st
+        final_time = et - st
         logger.info(f'parse time for this iteration: {final_time}')
     else:
         pass
@@ -79,7 +75,9 @@ upsert_address(cursor=cursor, db=db)
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
-cursor.execute("""insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""", filetracker_tup)
+cursor.execute(
+    """insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""",
+    filetracker_tup)
 db.commit()
 
 pipeline_title = 'Companies House File loaded'

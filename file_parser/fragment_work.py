@@ -116,18 +116,26 @@ def upsert_address(cursor, db):
 
 def sic_code_processing(cursor, db):
     """ load all results from monthly parse - divide sic code from text and insert into"""
-    cursor.execute("""select * from raw_companies_house_data limit 1000""")
+    cursor.execute("""select raw_companies_house_data.* from raw_companies_house_data
+    left join sic_code sc on raw_companies_house_data.company_number = sc.company_number
+    where sc.code is null""")
     res = cursor.fetchall()
+    count = 0
     for company_number, sic1, sic2, sic3, sic4 in res:
         org_id = f'UK{company_number}'
+        count += 1
+        if count == 100:
+            print(count)
+            count = 0
         siclist = [sic1, sic2, sic3, sic4]
         for sic in siclist:
             if sic is not None:
-                sic_code = re.findall(r'\d+', sic)[0]
-                print(sic)
-                print(sic_code)
-                print('-')
-            elif sic == 'None Supplied':
+                sic_code = re.findall(r'\d+', sic)
+                if len(sic_code) == 1:
+                    sic_code = sic_code[0]
+                else:
+                    sic_code = 'None Supplied'
+            else:
                 sic_code = 'None Supplied'
             cursor.execute(
                 """insert ignore into sic_code (code, organisation_id, company_number) VALUES (%s, %s, %s)""",
@@ -147,7 +155,7 @@ def address_processing(cursor, db):
     , reg_address_county
     , reg_address_postcode
     , RegAddress_Country
-     from raw_companies_house_input_stage limit 50000""")
+     from raw_companies_house_input_stage""")
     res = cursor.fetchall()
     for cnumber, cname, pobox, line1, line2, posttown, county, postcode, country in res:
         org_id = f'UK{cnumber}'
@@ -193,4 +201,5 @@ def write_to_organisation(cursor, db):
 
 
 cursor, db = connect_preprod()
-write_to_organisation(cursor, db)
+# write_to_organisation(cursor, db)
+sic_code_processing(cursor, db)

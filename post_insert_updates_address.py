@@ -24,7 +24,7 @@ def mass_update_address(cursor, db):
         select
         reg_address_line1, reg_address_line2
         , reg_address_posttown, reg_address_county,
-         reg_address_postcode, reg_address_county, 'UK', 'HEAD OFFICE',
+         reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
           LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number)
         from raw_companies_house_input_stage where company_number = %s""", (cnum,))
         print('insert done')
