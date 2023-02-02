@@ -199,7 +199,7 @@ def write_to_organisation(cursor, db):
             from raw_companies_house_input_stage where company_number = %s""", (org_id, 'Rory', cnumber))
             db.commit()
 
-
-cursor, db = connect_preprod()
-# write_to_organisation(cursor, db)
-sic_code_processing(cursor, db)
+#
+# cursor, db = connect_preprod()
+# # write_to_organisation(cursor, db)
+# sic_code_processing(cursor, db)

@@ -8,15 +8,16 @@ from file_parser.fragment_work import parse_fragment, upsert_sic, upsert_address
 from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
 from post_insert_updates_sic import sql_sic
 from post_insert_updates_address import sql_update_addresses_wmd5
+import sys
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-# host = sys.argv[1]
-# user = sys.argv[2]
-# passwd = sys.argv[3]
-# database = sys.argv[4]
-#
+host = sys.argv[1]
+user = sys.argv[2]
+passwd = sys.argv[3]
+database = sys.argv[4]
+
 host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
 user = 'rory'
 passwd = 'Me._7;cBsqQ$]JX}'
