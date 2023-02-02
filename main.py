@@ -6,7 +6,8 @@ import mysql.connector
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment, upsert_sic, upsert_address
 from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
-
+from post_insert_updates_sic import sql_sic
+from post_insert_updates_address import sql_update_addresses_wmd5
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
@@ -70,8 +71,8 @@ for fragment in fragment_list:
         pass
 
 # update raw companies house
-upsert_sic(cursor=cursor, db=db)
-upsert_address(cursor=cursor, db=db)
+sql_sic(cursor=cursor, db=db)
+sql_update_addresses_wmd5(cursor=cursor, db=db)
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())

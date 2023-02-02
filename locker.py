@@ -191,6 +191,11 @@ dtype_dict_columns_input = [
 dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
                    range(len(dtype_dict_columns_input))}
 
+sic_code_columns = ['comp']
+host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
+user = 'rory'
+passwd = 'Me._7;cBsqQ$]JX}'
+database = 'iqblade'
 
 def connect_preprod():
     db = mysql.connector.connect(
