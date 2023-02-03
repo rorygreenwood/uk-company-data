@@ -77,20 +77,6 @@ def sql_update_addresses_wmd5(cursor, db):
             where gl.md5_key <> rchis.md5_key;""")
     db.commit()
     # insert remaining results
-    # insert into organisation as well
-    cursor.execute("""insert ignore into organisation (id, company_name,
-                                 company_number,
-                                 company_status, country,
-                                 date_formed, last_modified_by,
-                                 last_modified_date, country_code)
-                        select CONCAT('UK', company_number),
-                               company_name, company_number,
-                               company_status,
-                               'UK', STR_TO_DATE(IncorporationDate, '%d/%m/%Y'),
-                               'Rory', CURDATE(), 'UK' from raw_companies_house_input_stage
-                                where CONCAT('UK', company_number) not in
-                                (select id from organisation where country = 'UNITED KINGDOM')""")
-    db.commit()
     cursor.execute("""insert into geo_location
         (address_1, address_2,
          town, county,

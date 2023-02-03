@@ -1,14 +1,18 @@
 import datetime
 import logging
 import os
-import time
-import mysql.connector
-from file_downloader.companyhouse_transfer import collect_companieshouse_file
-from file_parser.fragment_work import parse_fragment, upsert_sic, upsert_address
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
-from post_insert_updates_sic import sql_sic
-from post_insert_updates_address import sql_update_addresses_wmd5
 import sys
+import time
+
+import mysql.connector
+
+from file_downloader.companyhouse_transfer import collect_companieshouse_file
+from file_parser.fragment_work import parse_fragment
+from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
+from post_insert_updates_active import post_update_activity
+from post_insert_updates_address import sql_update_addresses_wmd5
+from post_insert_updates_sic import sql_sic
+
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
@@ -38,14 +42,6 @@ logger.info('downloading file')
 firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
 # verify that a new file needs to be downloaded
 verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
-# if verif_check:
-#     logger.info('file exists, pass')
-#     pipeline_title = 'No Companies House File'
-#     pipeline_message = f'Pipeline closed for today'
-#     pipeline_hexcolour = '#8f0d1a'
-#     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-#     quit()
-#
 fragment_list = os.listdir('file_downloader/files/fragments/')
 if len(fragment_list) == 0:
     ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
@@ -74,6 +70,7 @@ for fragment in fragment_list:
 # update raw companies house
 sql_sic(cursor=cursor, db=db)
 sql_update_addresses_wmd5(cursor=cursor, db=db)
+post_update_activity(cursor=cursor, db=db)
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
