@@ -10,7 +10,7 @@ def sql_update_addresses_wmd5(cursor, db):
     set md5_key = MD5(CONCAT(organisation_id, reg_address_line1)) where md5_key is null """)
     db.commit()
     # update current table
-    cursor.execute("""update geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
+    cursor.execute("""update geo_location_insert_test gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
             set gl.address_1 = rchis.reg_address_line1,
             gl.address_2 = rchis.reg_address_line2,
             gl.town = rchis.reg_address_posttown,
@@ -22,7 +22,7 @@ def sql_update_addresses_wmd5(cursor, db):
             where gl.md5_key <> rchis.md5_key;""")
     db.commit()
     # insert remaining results
-    cursor.execute("""insert into geo_location
+    cursor.execute("""insert into geo_location_insert_test
         (address_1, address_2,
          town, county,
           post_code, area_location, country, address_type,
@@ -36,9 +36,6 @@ def sql_update_addresses_wmd5(cursor, db):
         left join geo_location gl on gl.organisation_id = rchis.organisation_id
         where gl.organisation_id is null""")
     db.commit()
-    # cleanup
-
-    cursor.execute("""delete from geo_location where address_1 is null""")
 
 
 def sql_sic(cursor, db):
