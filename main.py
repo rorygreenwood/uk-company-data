@@ -9,18 +9,16 @@ import mysql.connector
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment
 from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
-from post_insert_updates_active import post_update_activity
-from post_insert_updates_address import sql_update_addresses_wmd5
-from post_insert_updates_sic import sql_sic
+from post_insert_updates import *
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-host = sys.argv[1]
-user = sys.argv[2]
-passwd = sys.argv[3]
-database = sys.argv[4]
+# host = sys.argv[1]
+# user = sys.argv[2]
+# passwd = sys.argv[3]
+# database = sys.argv[4]
 
 host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
 user = 'rory'
@@ -36,7 +34,7 @@ cursor = db.cursor()
 
 schema = 'iqblade'
 
-t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
+# t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
 logger.info('downloading file')
 firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
@@ -51,7 +49,7 @@ if len(fragment_list) == 0:
     fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
-# fragment_list = os.listdir('file_downloader/files/fragments/')
+
 for fragment in fragment_list:
     print(fragment)
     if fragment != 'fragments.txt':
@@ -68,9 +66,10 @@ for fragment in fragment_list:
         pass
 
 # update raw companies house
-sql_sic(cursor=cursor, db=db)
-sql_update_addresses_wmd5(cursor=cursor, db=db)
-post_update_activity(cursor=cursor, db=db)
+write_to_org(cursor, db)  # writes new companies to organisation
+sql_sic(cursor=cursor, db=db)  # writes sic_text_1 to sic_code
+sql_update_addresses_wmd5(cursor=cursor, db=db)  # writes addresses to geo_location, matching on md5_hash
+post_update_activity(cursor=cursor, db=db)  # updates company_status in organisation
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
