@@ -1,14 +1,13 @@
 import datetime
 import logging
 import os
-import sys
 import time
 
 import mysql.connector
 
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger, date_check
+from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check
 from post_insert_updates import *
 
 logging.basicConfig(level=logging.INFO,
