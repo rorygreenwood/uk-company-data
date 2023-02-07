@@ -86,11 +86,14 @@ def sql_update_addresses_wmd5(cursor, db):
         reg_address_line1, reg_address_line2
         , reg_address_posttown, reg_address_county,
          reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
-          LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number), gl.md5_key
+          LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number), rchis.md5_key
         from raw_companies_house_input_stage rchis
-        left join geo_location gl on gl.organisation_id = rchis.organisation_id
+        left join (select * from geo_location where address_type = 'HEAD_OFFICE') gl on gl.organisation_id = rchis.organisation_id
         where gl.organisation_id is null""")
     db.commit()
     # cleanup
 
     cursor.execute("""delete from geo_location where address_1 is null""")
+
+
+sql_update_addresses_wmd5(cursor, db)
