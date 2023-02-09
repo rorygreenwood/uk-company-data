@@ -65,10 +65,34 @@ for fragment in fragment_list:
         pass
 
 # update raw companies house
-write_to_org(cursor, db)  # writes new companies to organisation
-sql_sic(cursor=cursor, db=db)  # writes sic_text_1 to sic_code
-sql_update_addresses_wmd5(cursor=cursor, db=db)  # writes addresses to geo_location, matching on md5_hash
-post_update_activity(cursor=cursor, db=db)  # updates company_status in organisation
+try:
+    write_to_org(cursor, db)  # writes new companies to organisation
+except Exception as e:
+    pipeline_title = 'Companies House File loading failed - write_to_org'
+    pipeline_message = f'{e}'
+    pipeline_hexcolour = '#b51307'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+try:
+    sql_sic(cursor=cursor, db=db)  # writes sic_text_1 to sic_code
+except Exception as e:
+    pipeline_title = 'Companies House File loading failed - sql_sic'
+    pipeline_message = f'{e}'
+    pipeline_hexcolour = '#b51307'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+try:
+    sql_update_addresses_wmd5(cursor=cursor, db=db)  # writes addresses to geo_location, matching on md5_hash
+except Exception as e:
+    pipeline_title = 'Companies House File loading failed - sql_update_addresses_wmd5'
+    pipeline_message = f'{e}'
+    pipeline_hexcolour = '#b51307'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+try:
+    post_update_activity(cursor=cursor, db=db)  # updates company_status in organisation
+except Exception as e:
+    pipeline_title = 'Companies House File loading failed - post_update_activity'
+    pipeline_message = f'{e}'
+    pipeline_hexcolour = '#b51307'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
