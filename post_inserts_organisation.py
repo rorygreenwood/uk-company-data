@@ -29,6 +29,54 @@ def update_org_website(cursor, db):
     db.commit()
 
 
+def del_from_org(cursor, db):
+    table_set_a = ['organisation_filing_history', 'organisation_officer_appointment', 'sic_code', 'geo_location',
+                   'organisation_digital_maturity', 'director', 'alias_name', 'isic_organisations_mapped',
+                   'domain_alias', 'tags', 'social_handles', 'frontend_quicksearch_history', 'hgdata_entries',
+                   'previous_name', 'organisation_appointment_details', 'hgdata_organisation',
+                   'organisation_competencies',
+                   'financial_summary', 'detailed_financials', 'employee_estimation', 'organisation_group_structure',
+                   'ryan_competencyID_organisationID']
+    table_set_b = [('organisation_merger_details', 'org_1_id', 'org_2_id'),
+                   ('organisation_funding_details', 'funded_organisation_id', 'leading_organisation_id')]
+    table_set_c = ['social_youtube_account_topics',
+                   'social_youtube_history']
+    for table in table_set_a:
+        cursor.execute("""delete from %s where organisation_id in (select o.id from organisation o
+    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""", (table[0],))
+        db.commit()
+
+    for table, col1, col2 in table_set_b:
+        cursor.execute("""delete from %s where %s in (select o.id from organisation o
+    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' )
+    or %s in (select o.id from organisation o
+    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""",
+                       (table, col1, col2))
+        db.commit()
+
+    for table in table_set_c:
+        cursor.execute("""delete from %s where youtube_account_id in
+    (select id from social_youtube_account where organisation_id in
+    (select o.id from organisation o
+    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""", (table[0],))
+        db.commit()
+
+    cursor.execute("""delete from social_youtube_account where organisation_id in (select o.id from organisation o
+    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""")
+    db.commit()
+
+    cursor.execute("""delete from organisation where id in (
+    select organisation_id from raw_companies_house_input_stage rchis
+                           where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'
+    );""")
+    db.commit()
+
+
 def run_updates(cursor, db):
     try:
         write_to_org(cursor, db)
@@ -47,7 +95,19 @@ def run_updates(cursor, db):
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         pass
 
+    try:
+        del_from_org(cursor, db)
+    except Exception as e:
+        pipeline_title = 'Error on post_inserts_organsation'
+        pipeline_message = f'del_from_org: {e}'
+        pipeline_hexcolour = '#83eb34'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        pass
+
     pipeline_title = 'Organisation Updates complete'
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+
+
+run_updates()
