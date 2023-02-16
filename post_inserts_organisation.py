@@ -110,4 +110,4 @@ def run_updates(cursor, db):
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 
 
-run_updates()
+run_updates(cursor, db)
