@@ -25,7 +25,11 @@ def update_org_website(cursor, db):
     print('add websites')
     cursor.execute("""update organisation o
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
-                        set o.website = rchis.URI where o.website is null and o.website <> ''""")
+                        set 
+                        o.website = rchis.URI,
+                        last_modified_by = 'Rory',
+                        last_modified_date = CURDATE()
+                         where o.website is null and o.website <> ''""")
     db.commit()
 
 
@@ -42,27 +46,26 @@ def del_from_org(cursor, db):
     table_set_c = ['social_youtube_account_topics',
                    'social_youtube_history']
     for table in table_set_a:
-        cursor.execute("""delete from %s where organisation_id in (select o.id from organisation o
+        cursor.execute(f"""delete from {table} where organisation_id in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
     where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""", (table,))
         db.commit()
 
     for table, col1, col2 in table_set_b:
-        cursor.execute("""delete from %s where %s in (select o.id from organisation o
+        cursor.execute(f"""delete from {table} where {col1} in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
     where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' )
-    or %s in (select o.id from organisation o
+    or {col2} in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""",
-                       (table, col1, col2))
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""")
         db.commit()
 
     for table in table_set_c:
-        cursor.execute("""delete from %s where youtube_account_id in
+        cursor.execute(f"""delete from {table} where youtube_account_id in
     (select id from social_youtube_account where organisation_id in
     (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""", (table,))
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""")
         db.commit()
 
     cursor.execute("""delete from social_youtube_account where organisation_id in (select o.id from organisation o
@@ -75,7 +78,6 @@ def del_from_org(cursor, db):
                            where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'
     );""")
     db.commit()
-
 
 def run_updates(cursor, db):
     try:

@@ -80,7 +80,9 @@ def post_update_activity(cursor, db):
     update organisation o
     inner join raw_companies_house_input_stage rchis
     on o.id = rchis.organisation_id
-    set o.company_status = rchis.company_status""")
+    set o.company_status = rchis.company_status,
+    last_modified_by = 'Rory',
+    last_modified_date = CURDATE()""")
 
     db.commit()
 
