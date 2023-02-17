@@ -74,6 +74,7 @@ where TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) is not null and
       TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) <> '';""")
     db.commit()
 
+
 def post_update_activity(cursor, db):
     cursor.execute("""
     update organisation o
@@ -82,33 +83,6 @@ def post_update_activity(cursor, db):
     set o.company_status = rchis.company_status""")
 
     db.commit()
-
-
-def delete_from_org(cursor, db):
-    # put together tuplelist of
-    cursor.execute("""
-    select o.id, o.company_name from organisation o 
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' """)
-    res = cursor.fetchall()
-    for oid, cname in res:
-        print(cname)
-        cursor.execute("""select * from organisation_filing_history where organisation_id = %s""", (oid,))
-        ofh_res = cursor.fetchall()
-        if len(ofh_res) > 0:
-            print(len(ofh_res), ' for ofh ' , oid)
-        cursor.execute("""select * from organisation_funding_details where funded_organisation_id = %s""", (oid,))
-        ofd_res = cursor.fetchall()
-        if len(ofd_res) > 0:
-            print(len(ofd_res), ' for ofh ' , oid)
-        cursor.execute("""select * from organisation_merger_details where org_1_id = %s""", (oid,))
-        omd_res = cursor.fetchall()
-        if len(omd_res) > 0:
-            print(len(omd_res), ' for omd ' , oid)
-        cursor.execute("""select * from organisation_officer_appointment where organisation_id = %s""", (oid,))
-        ooa_res = cursor.fetchall()
-        if len(ooa_res) > 0:
-            print(len(ooa_res), ' for ooa ' , oid)
 
 
 def write_to_org(cursor, db):
@@ -158,6 +132,3 @@ def run_updates(cursor, db):
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-
-
-delete_from_org(cursor, db)

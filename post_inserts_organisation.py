@@ -44,7 +44,7 @@ def del_from_org(cursor, db):
     for table in table_set_a:
         cursor.execute("""delete from %s where organisation_id in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""", (table[0],))
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""", (table,))
         db.commit()
 
     for table, col1, col2 in table_set_b:
@@ -62,7 +62,7 @@ def del_from_org(cursor, db):
     (select id from social_youtube_account where organisation_id in
     (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""", (table[0],))
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""", (table,))
         db.commit()
 
     cursor.execute("""delete from social_youtube_account where organisation_id in (select o.id from organisation o
@@ -108,6 +108,3 @@ def run_updates(cursor, db):
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-
-
-run_updates(cursor, db)
