@@ -41,7 +41,7 @@ firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today(
 # verify that a new file needs to be downloaded
 verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 fragment_list = os.listdir('file_downloader/files/fragments/')
-if len(fragment_list) == 0:
+if len(fragment_list) == 1:
     ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
     str_ch_file = str(ch_file)
     logger.info('unzipping file')

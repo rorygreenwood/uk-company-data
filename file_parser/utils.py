@@ -21,7 +21,7 @@ def unzip_ch_file(file_name):
     output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
-    os.remove('file_downloader/files/BasicCompanyDataAsOneFile-2023-01-01.zip')
+    os.remove(f'file_downloader/files/{file_name}')
     return file_name.replace('.zip', '.csv')
 
 
