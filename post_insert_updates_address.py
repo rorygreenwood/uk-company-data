@@ -61,6 +61,7 @@ def sql_update_addresses(cursor, db):
 
 def sql_update_addresses_wmd5(cursor, db):
     # develop md5 for addresses in rchis
+    # todo switch from reg_line_1 to postcode?
     cursor.execute("""update raw_companies_house_input_stage
     set md5_key = MD5(CONCAT(organisation_id, reg_address_line1)) where md5_key is null """)
     db.commit()

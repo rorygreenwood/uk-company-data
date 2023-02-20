@@ -1,5 +1,6 @@
 from locker import connect_preprod
 from file_parser.utils import pipeline_messenger
+import logging
 
 cursor, db = connect_preprod()
 
