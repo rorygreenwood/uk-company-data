@@ -90,15 +90,6 @@ def run_updates(cursor, db):
         pipeline_hexcolour = '#83eb34'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         pass
-    try:
-        update_org_website(cursor, db)
-    except Exception as e:
-        pipeline_title = 'Error on post_inserts_organsation'
-        pipeline_message = f'update_org_website: {e}'
-        pipeline_hexcolour = '#83eb34'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        pass
-
     #try:
     del_from_org(cursor, db)
     #except Exception as e:
