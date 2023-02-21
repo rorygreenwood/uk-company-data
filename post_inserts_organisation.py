@@ -49,7 +49,7 @@ def del_from_org(cursor, db):
     for table in table_set_a:
         cursor.execute(f"""delete from {table} where organisation_id in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""", (table,))
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""")
         db.commit()
 
     for table, col1, col2 in table_set_b:
@@ -80,6 +80,7 @@ def del_from_org(cursor, db):
     );""")
     db.commit()
 
+
 def run_updates(cursor, db):
     try:
         write_to_org(cursor, db)
@@ -98,16 +99,19 @@ def run_updates(cursor, db):
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         pass
 
-    try:
-        del_from_org(cursor, db)
-    except Exception as e:
-        pipeline_title = 'Error on post_inserts_organsation'
-        pipeline_message = f'del_from_org: {e}'
-        pipeline_hexcolour = '#83eb34'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        pass
+    #try:
+    del_from_org(cursor, db)
+    #except Exception as e:
+        # pipeline_title = 'Error on post_inserts_organsation'
+        # pipeline_message = f'del_from_org: {e}'
+        # pipeline_hexcolour = '#83eb34'
+        # pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        # pass
 
     pipeline_title = 'Organisation Updates complete'
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+
+
+run_updates(cursor, db)
