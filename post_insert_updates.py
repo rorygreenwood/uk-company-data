@@ -1,7 +1,12 @@
 from file_parser.utils import pipeline_messenger
 from locker import connect_preprod
+import logging
 
 cursor, db = connect_preprod()
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+logger = logging.getLogger()
 
 
 def sql_update_addresses_wmd5(cursor, db):
@@ -40,38 +45,46 @@ def sql_update_addresses_wmd5(cursor, db):
 
 def sql_sic(cursor, db):
     # for sic_text_1
-    cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
-select TRIM(SUBSTRING_INDEX(sic_text_1,'-',1)), organisation_id, company_number,
-       MD5(CONCAT(company_number, TRIM(SUBSTRING_INDEX(sic_text_1,'-',1))))
+    logger.info('starting sql_sic')
+    cursor.execute("""insert into sic_code (code, organisation_id, company_number, md5)
+select TRIM(SUBSTRING_INDEX(sic_text_1,'-',1)), o.id, rchis.company_number,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_1,'-',1))))
 from raw_companies_house_input_stage rchis
-where TRIM(SUBSTRING_INDEX(sic_text_1,'-',1)) is not null and
-      TRIM(SUBSTRING_INDEX(sic_text_1,'-',1)) <> '';""")
+inner join (select * from organisation where country = 'united kingdom') o on rchis.organisation_id = o.id
+left join sic_code sc on o.id = sc.organisation_id
+where sc.id is null""")
     db.commit()
 
     # for sic_text_2
     cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
-select TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)), organisation_id, company_number,
-       MD5(CONCAT(company_number, TRIM(SUBSTRING_INDEX(sic_text_2,'-',1))))
+select TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)), rchis.organisation_id, rchis.company_number,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_2,'-',1))))
 from raw_companies_house_input_stage rchis
+    inner join organisation o on rchis.organisation_id = o.id
+    left join sic_code sc on MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)))) = sc.md5
 where TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)) is not null and
-      TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)) <> '';""")
+      TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)) <> '' and sc.md5 is null;""")
     db.commit()
 
     # for sic_text_3
     cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
-select TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)), organisation_id, company_number,
-       MD5(CONCAT(company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1))))
+select TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)), rchis.organisation_id, rchis.company_number,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1))))
 from raw_companies_house_input_stage rchis
+inner join organisation o on rchis.organisation_id = o.id
+    left join sic_code sc on MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)))) = sc.md5
 where TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)) is not null and
-      TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)) <> '';""")
+      TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)) <> '' and sc.md5 is null;""")
     db.commit()
 
     cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
-select TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)), organisation_id, company_number,
-       MD5(CONCAT(company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1))))
+select TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)), rchis.organisation_id, rchis.company_number,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1))))
 from raw_companies_house_input_stage rchis
+inner join organisation o on rchis.organisation_id = o.id
+    left join sic_code sc on MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)))) = sc.md5
 where TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) is not null and
-      TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) <> '';""")
+      TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) <> '' and sc.md5 is null;""")
     db.commit()
 
 
@@ -134,3 +147,6 @@ def run_updates(cursor, db):
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+
+
+sql_sic(cursor, db)
