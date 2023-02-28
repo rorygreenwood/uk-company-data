@@ -1,6 +1,7 @@
 import datetime
 import logging
 import os
+import sys
 import time
 
 import mysql.connector
@@ -15,15 +16,16 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-# host = sys.argv[1]
-# user = sys.argv[2]
-# passwd = sys.argv[3]
-# database = sys.argv[4]
-
-host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-user = 'rory'
-passwd = 'Me._7;cBsqQ$]JX}'
-database = 'iqblade'
+if len(sys.argv) > 2:
+    host = sys.argv[1]
+    user = sys.argv[2]
+    passwd = sys.argv[3]
+    database = sys.argv[4]
+else:
+    host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
+    user = 'rory'
+    passwd = 'Me._7;cBsqQ$]JX}'
+    database = 'iqblade'
 
 db = mysql.connector.connect(
     host=host,
@@ -41,7 +43,14 @@ logger.info('downloading file')
 firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
 # verify that a new file needs to be downloaded
 verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
+if verif_check:
+    logger.info('file already exists in tracker')
+    quit()
+
+# check for pre-existing files to be loaded first
 fragment_list = os.listdir('file_downloader/files/fragments/')
+
+# if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
 if len(fragment_list) == 1:
     ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
     str_ch_file = str(ch_file)
@@ -51,6 +60,7 @@ if len(fragment_list) == 1:
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
 else:
+    # if fragments already present
     str_ch_file = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     ch_upload_date = firstDayOfMonth
 logger.info('loading fragments...')

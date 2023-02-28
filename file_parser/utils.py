@@ -11,8 +11,10 @@ def date_check(file_date: datetime.date, cursor):
     cursor.execute("select * from BasicCompanyData_filetracker where ch_upload_date = %s", (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
+        print('exists')
         return True
     else:
+        print('does not exist')
         return False
 
 

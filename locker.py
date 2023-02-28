@@ -192,10 +192,6 @@ dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for
                    range(len(dtype_dict_columns_input))}
 
 sic_code_columns = ['comp']
-host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-user = 'rory'
-passwd = 'Me._7;cBsqQ$]JX}'
-database = 'iqblade'
 org_del_query_list = [
     """delete from organisation_filing_history where organisation_id in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
