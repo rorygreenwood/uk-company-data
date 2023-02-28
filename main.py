@@ -24,6 +24,7 @@ host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
 user = 'rory'
 passwd = 'Me._7;cBsqQ$]JX}'
 database = 'iqblade'
+
 db = mysql.connector.connect(
     host=host,
     user=user,
