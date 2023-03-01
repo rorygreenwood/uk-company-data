@@ -147,6 +147,3 @@ def run_updates(cursor, db):
     pipeline_message = f''
     pipeline_hexcolour = '#83eb34'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-
-
-sql_sic(cursor, db)
