@@ -80,25 +80,40 @@ for fragment in fragment_list:
     else:
         pass
 
-# todo add org_id and md5 on rchis
-add_organisation_id(cursor, db)
-# todo update to organisation (add ids, update ids)
-update_org_website(cursor, db)
-update_org_activity(cursor, db)
+try:
+    # add org_id and md5 on rchis
+    add_organisation_id(cursor, db)
+    logger.info('add_organisation_id completed')
+    # update to organisation (add ids, update ids)
+    update_org_website(cursor, db)
+    logger.info('update_org_website completed')
+    update_org_activity(cursor, db)
+    logger.info('update_org_activity completed')
 
-write_to_org(cursor, db)
+    write_to_org(cursor, db)
+    logger.info('write_to_org completed')
+    # add and update sic
 
-# todo add and update sic
+    sql_sic(cursor, db)
+    logger.info('sql_sic completed')
+    # add and update addresses
+    geolocation_md5_gen(cursor, db)
+    logger.info('geolocation_md5_gen completed')
+    geolocation_update_current(cursor, db)
+    logger.info('geolocation_update_current completed')
+    geolocation_insert_excess(cursor, db)
+    logger.info('geolocation_insert_excess completed')
 
-sql_sic(cursor, db)
-
-# todo add and update addresses
-geolocation_md5_gen(cursor, db)
-geolocation_update_current(cursor, db)
-geolocation_insert_excess(cursor, db)
-
-# todo delete organisations
-del_from_org(cursor, db)
+    # delete organisations
+    del_from_org(cursor, db)
+    logger.info('update_org_activity completed')
+except Exception as e:
+    print(e)
+    pipeline_title = 'Companies House File Pipeline Failed'
+    pipeline_message = f'File Date: {ch_upload_date} - {e}'
+    pipeline_hexcolour = '#62a832'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
