@@ -9,8 +9,8 @@ import mysql.connector
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check
-from post_insert_updates import *
-from post_inserts_organisation import run_updates
+
+from new_main_funcs import *
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
@@ -63,6 +63,7 @@ else:
     # if fragments already present
     str_ch_file = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     ch_upload_date = firstDayOfMonth
+
 logger.info('loading fragments...')
 for fragment in fragment_list:
     print(fragment)
@@ -79,41 +80,25 @@ for fragment in fragment_list:
     else:
         pass
 
-# update raw companies house
-logger.info('starting updates...')
-try:
-    run_updates(cursor, db)  # writes new companies to org, updates websites, removes companies
-    logger.info('run_updates COMPLETED')
-except Exception as e:
-    pipeline_title = 'Companies House File loading failed - run_updates'
-    pipeline_message = f'{e}'
-    pipeline_hexcolour = '#b51307'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-try:
-    post_update_activity(cursor=cursor, db=db)  # updates company_status in organisation
-    logger.info('post_update_activity COMPLETED')
-except Exception as e:
-    pipeline_title = 'Companies House File loading failed - post_update_activity'
-    pipeline_message = f'{e}'
-    pipeline_hexcolour = '#b51307'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-try:
-    sql_sic(cursor=cursor, db=db)  # writes sic codes
-    logger.info('sql_sic COMPLETED')
-except Exception as e:
-    pipeline_title = 'Companies House File loading failed - sql_sic'
-    pipeline_message = f'{e}'
-    pipeline_hexcolour = '#b51307'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-try:
-    sql_update_addresses_wmd5(cursor=cursor, db=db)  # writes addresses to geo_location, matching on md5_hash
-    logger.info('sql_update_addresses_wmd5 COMPLETED')
-except Exception as e:
-    pipeline_title = 'Companies House File loading failed - sql_update_addresses_wmd5'
-    pipeline_message = f'{e}'
-    pipeline_hexcolour = '#b51307'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+# todo add org_id and md5 on rchis
+add_organisation_id(cursor, db)
+# todo update to organisation (add ids, update ids)
+update_org_website(cursor, db)
+update_org_activity(cursor, db)
 
+write_to_org(cursor, db)
+
+# todo add and update sic
+
+sql_sic(cursor, db)
+
+# todo add and update addresses
+geolocation_md5_gen(cursor, db)
+geolocation_update_current(cursor, db)
+geolocation_insert_excess(cursor, db)
+
+# todo delete organisations
+del_from_org(cursor, db)
 
 # when done, update filetracker
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
