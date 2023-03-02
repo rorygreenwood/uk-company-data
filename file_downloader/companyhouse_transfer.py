@@ -5,6 +5,8 @@ import requests as r
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+
+
 def collect_companieshouse_file(firstDayOfMonth):
     logger.info(f'set date as {firstDayOfMonth}')
     filename = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'

@@ -27,7 +27,7 @@ def sql_update_addresses_wmd5(cursor, db):
             where gl.md5_key <> rchis.md5_key;""")
     db.commit()
     # insert remaining results
-    cursor.execute("""insert into geo_location
+    cursor.execute("""insert ignore into geo_location
         (address_1, address_2,
          town, county,
           post_code, area_location, country, address_type,
@@ -46,7 +46,7 @@ def sql_update_addresses_wmd5(cursor, db):
 def sql_sic(cursor, db):
     # for sic_text_1
     logger.info('starting sql_sic')
-    cursor.execute("""insert into sic_code (code, organisation_id, company_number, md5)
+    cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
 select TRIM(SUBSTRING_INDEX(sic_text_1,'-',1)), o.id, rchis.company_number,
        MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_1,'-',1))))
 from raw_companies_house_input_stage rchis
