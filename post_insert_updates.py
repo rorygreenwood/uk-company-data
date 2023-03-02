@@ -102,7 +102,7 @@ def post_update_activity(cursor, db):
 
 def write_to_org(cursor, db):
     # insert into organisation as well
-    cursor.execute("""insert ignore into organisation_insert_test (id, company_name,
+    cursor.execute("""insert ignore into organisation (id, company_name,
                                  company_number,
                                  company_status, country,
                                  date_formed, last_modified_by,
@@ -110,7 +110,7 @@ def write_to_org(cursor, db):
                         select CONCAT('UK', company_number),
                                company_name, company_number,
                                company_status,
-                               'UK', STR_TO_DATE(IncorporationDate, '%d/%m/%Y'),
+                               'UNITED KINGDOM', STR_TO_DATE(IncorporationDate, '%d/%m/%Y'),
                                'Rory', CURDATE(), 'UK' from raw_companies_house_input_stage
                                 where CONCAT('UK', company_number) not in
                                 (select id from organisation_insert_test where country = 'UNITED KINGDOM')""")
@@ -119,7 +119,7 @@ def write_to_org(cursor, db):
 
 def update_org_website(cursor, db):
     print('add websites')
-    cursor.execute("""update organisation_insert_test o
+    cursor.execute("""update organisation o
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
                         set o.website = rchis.URI where o.website is null and o.website <> ''""")
     db.commit()
