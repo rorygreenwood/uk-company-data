@@ -15,5 +15,5 @@ steps:
 - script: pip install -r requirements.txt
   displayName: install requirements for datatransfer
 - script:
-    python3 _main.py $(preprodhost) $(adminuser) $(adminpass) $(database)
+    python3 main.py $(preprodhost) $(adminuser) $(adminpass) $(database)
   displayName: Execute the file
