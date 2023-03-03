@@ -99,7 +99,7 @@ try:
     # add and update addresses
     geolocation_md5_gen(cursor, db)
     logger.info('geolocation_md5_gen completed')
-    geolocation_update_current(cursor, db)
+    # geolocation_update_current(cursor, db)
     logger.info('geolocation_update_current completed')
     geolocation_insert_excess(cursor, db)
     logger.info('geolocation_insert_excess completed')
