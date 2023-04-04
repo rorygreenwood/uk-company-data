@@ -18,6 +18,18 @@ def date_check(file_date: datetime.date, cursor):
         return False
 
 
+def date_check_sic(file_date: datetime.date, cursor):
+    cursor.execute("select * from BasicCompanyData_filetracker_siccode_analysis where ch_upload_date = %s",
+                   (file_date,))
+    res = cursor.fetchall()
+    if len(res) > 0:
+        print('exists')
+        return True
+    else:
+        print('does not exist')
+        return False
+
+
 def unzip_ch_file(file_name):
     filepath = f'file_downloader/files/{file_name}'
     output_directory = 'file_downloader/files'

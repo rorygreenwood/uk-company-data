@@ -17,6 +17,12 @@ def add_organisation_id(cursor, db):
     db.commit()
 
 
+def add_organisation_id_retro(cursor, db):
+    cursor.execute("""update raw_companies_house_input_stage
+     set organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
+    db.commit()
+
+
 # ORGANISATION WORK
 
 def write_to_org(cursor, db):

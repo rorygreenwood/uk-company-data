@@ -250,3 +250,28 @@ def connect_preprod():
 
     cursor = db.cursor()
     return cursor, db
+
+#
+# def connect_preprod(host, user, passwd, db):
+#     db = mysql.connector.connect(
+#         host=host,
+#         user=user,
+#         passwd=passwd,
+#         database=db
+#     )
+#
+#     cursor = db.cursor()
+#     return cursor, db
+#
+# host = 'put host string here'
+# user = 'put username here'
+# passwd = 'put passwd here'
+# db = 'put db here'
+#
+# cursor, db = connect_preprod(host, user, passwd, db)
+#
+# sql_query_str = """put multi-line query in here"""
+# # perform query
+# cursor.execute(sql_query_str)
+# # return results of query
+# cursor.fetchall()
