@@ -85,32 +85,78 @@ try:
     add_organisation_id(cursor, db)
     logger.info('add_organisation_id completed')
     # update to organisation (add ids, update ids)
-    update_org_website(cursor, db)
-    logger.info('update_org_website completed')
-    update_org_activity(cursor, db)
-    logger.info('update_org_activity completed')
-
-    write_to_org(cursor, db)
-    logger.info('write_to_org completed')
+    try:
+        update_org_website(cursor, db)
+        logger.info('update_org_website completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check update_org_website: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
+    try:
+        update_org_activity(cursor, db)
+        logger.info('update_org_activity completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check update_org_activity: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
+    try:
+        write_to_org(cursor, db)
+        logger.info('write_to_org completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check write_to-org: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
     # add and update sic
-
-    sql_sic(cursor, db)
-    logger.info('sql_sic completed')
+    try:
+        sql_sic(cursor, db)
+        logger.info('sql_sic completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check sql_sic: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
     # add and update addresses
-    geolocation_md5_gen(cursor, db)
-    logger.info('geolocation_md5_gen completed')
+    try:
+        geolocation_md5_gen(cursor, db)
+        logger.info('geolocation_md5_gen completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check geolocation_md5_gem: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
     # geolocation_update_current(cursor, db)
-    logger.info('geolocation_update_current completed')
-    geolocation_insert_excess(cursor, db)
-    logger.info('geolocation_insert_excess completed')
+    # logger.info('geolocation_update_current completed')
+    try:
+        geolocation_insert_excess(cursor, db)
+        logger.info('geolocation_insert_excess completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check geolocation_insert_excess: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
 
     # delete organisations
-    del_from_org(cursor, db)
-    logger.info('update_org_activity completed')
-except Exception as e:
-    print(e)
+    try:
+        del_from_org(cursor, db)
+        logger.info('update_org_activity completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check del_from_org: {e}'
+        pipeline_hexcolour = '#62a832'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
+except Exception as err:
     pipeline_title = 'Companies House File Pipeline Failed'
-    pipeline_message = f'File Date: {ch_upload_date} - {e}'
+    pipeline_message = f'File Date: {ch_upload_date} - {err}'
     pipeline_hexcolour = '#62a832'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
     quit()

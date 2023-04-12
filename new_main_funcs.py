@@ -77,40 +77,66 @@ def del_from_org(cursor, db):
                    ('organisation_funding_details', 'funded_organisation_id', 'leading_organisation_id')]
     table_set_c = ['social_youtube_account_topics',
                    'social_youtube_history']
-    for table in table_set_a:
-        cursor.execute(f"""delete from {table} where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED')""")
+
+    # todo delete cascade instead of this
+    # todo select all records and iterate deleting - create staging/df
+    # todo put companies in for loop and then if try/except and then see which companies error without stopping the whole pipeline
+    # todo include logging/pipeline message with list of companies that were not deleted
+    cursor.execute("""select o.id, o.company_name from organisation o inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
+    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' """)
+    companies = cursor.fetchall()
+    # cname fail list consists of company name, table name
+    c_name_fail_list = []
+    for c_id, c_name in companies:
+
+        for table in table_set_a:
+            try:
+                cursor.execute(f"""delete from {table} where organisation_id = {c_id})""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                c_name_fail_list.append((c_id, c_name, table, e))
+                pass
+
+        for table, col1, col2 in table_set_b:
+            try:
+                cursor.execute(f"""delete from {table} where {col1} = {c_id}
+            or {col2} = {c_id};""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                c_name_fail_list.append((c_id, c_name, table, e))
+                pass
+
+        for table in table_set_c:
+            try:
+                cursor.execute(f"""delete from {table} where youtube_account_id in
+            (select id from social_youtube_account where organisation_id = {c_id})""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                c_name_fail_list.append((c_id, c_name, table, e))
+                pass
+            try:
+                cursor.execute(f"""delete from social_youtube_account where organisation_id = {c_id};""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                c_name_fail_list.append((c_id, c_name, table, e))
+                pass
+            try:
+                cursor.execute(f"""delete from organisation where id = {c_id}""")
+                db.commit()
+            except Exception as e:
+                print(e)
+                c_name_fail_list.append((c_id, c_name, table, e))
+                pass
+    for company_id, company_name, preprod_table, error_text in c_name_fail_list:
+        cursor.execute("""insert into companies_house_pipeline_failed_removals
+         (company_id, company_name, table_name, error_text) VALUES (%s, %s, %s, %s) """,
+                       company_id, company_name, preprod_table, error_text
+                       )
         db.commit()
-
-    for table, col1, col2 in table_set_b:
-        cursor.execute(f"""delete from {table} where {col1} in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' )
-    or {col2} in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""")
-        db.commit()
-
-    for table in table_set_c:
-        cursor.execute(f"""delete from {table} where youtube_account_id in
-    (select id from social_youtube_account where organisation_id in
-    (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'))""")
-        db.commit()
-
-    cursor.execute("""delete from social_youtube_account where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""")
-    db.commit()
-
-    cursor.execute("""delete from organisation where id in (
-    select organisation_id from raw_companies_house_input_stage rchis
-                           where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'
-    );""")
-    db.commit()
-
 
 # GEOLOCATION
 
