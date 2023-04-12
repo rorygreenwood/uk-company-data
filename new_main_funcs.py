@@ -78,10 +78,6 @@ def del_from_org(cursor, db):
     table_set_c = ['social_youtube_account_topics',
                    'social_youtube_history']
 
-    # todo delete cascade instead of this
-    # todo select all records and iterate deleting - create staging/df
-    # todo put companies in for loop and then if try/except and then see which companies error without stopping the whole pipeline
-    # todo include logging/pipeline message with list of companies that were not deleted
     cursor.execute("""select o.id, o.company_name from organisation o inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
     where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' """)
     companies = cursor.fetchall()
