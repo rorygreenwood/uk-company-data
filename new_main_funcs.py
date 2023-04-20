@@ -217,3 +217,14 @@ inner join organisation o on rchis.organisation_id = o.id
 where TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) is not null and
       TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) <> '' and sc.md5 is null;""")
     db.commit()
+
+    cursor.execute("""
+    insert into isic_organisations_mapped (organisation_id, isic_id)
+select o.id, il3.id from organisation o
+left join isic_organisations_mapped iom on iom.organisation_id = o.id
+inner join sic_code sc on sc.organisation_id = o.id
+inner join isic_level_3 il3 on sc.code = il3.sic_code_1
+where iom.organisation_id is null
+    """)
+    db.commit()
+

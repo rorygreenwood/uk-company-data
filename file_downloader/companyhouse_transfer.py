@@ -7,11 +7,13 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
+# https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2023-04-01.zip
+# https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2023-01-01.zip
 def collect_companieshouse_file(firstDayOfMonth):
     logger.info(f'set date as {firstDayOfMonth}')
     filename = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
     logger.info(f'set filename as {filename}')
-    baseurl = 'http://download.companieshouse.gov.uk/' + filename
+    baseurl = 'https://download.companieshouse.gov.uk/' + filename
     logger.info(f'sending request using url: {baseurl}')
     req = r.get(baseurl, stream=True)
     with open('file_downloader/files/' + filename, 'wb') as fd:

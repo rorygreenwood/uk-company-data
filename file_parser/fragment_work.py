@@ -95,15 +95,16 @@ def parse_fragment_retro(fragment, host, user, passwd, db, cursor, cursordb, com
     dbEngine = sqlalchemy.create_engine(constring)
 
     df = pd.read_csv(fragment, encoding='utf-8', dtype=dtype_dict, low_memory=False,
-                     usecols=['company_number', 'company_name', 'sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4'])
+                     # usecols=['company_number', 'company_name', 'sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4']
+                     )
     # df.rename(columns=dtype_dict_comp, inplace=True)
     # todo need to have a table created for each stage based on data of file, this file must then be
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
     # may change to this line after deprecations
     # df = df.set_axis(dtype_dict_columns_output, copy=False, axis=1)
-    df.set_axis(dtype_dict_columns_output, inplace=True, axis=1)
-    df.to_sql(name='BasicCompanyData_sic_data', con=dbEngine, if_exists='append', index=False,
+    # df.set_axis(dtype_dict_columns_output, inplace=True, axis=1)
+    df.to_sql(name=f'BasicCompanyData_sic_data_{company_file_table}', con=dbEngine, if_exists='append', index=False,
               schema='iqblade')
     cursordb.commit()
 
