@@ -4,7 +4,6 @@ import pandas as pd
 import sqlalchemy
 
 from locker import *
-import logging
 
 
 def parse_fragment(fragment, host, user, passwd, db, cursor, cursordb):

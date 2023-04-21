@@ -1,5 +1,4 @@
 import datetime
-import logging
 import os
 import sys
 import time
@@ -8,8 +7,7 @@ import mysql.connector
 
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check
-
+from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
 from new_main_funcs import *
 
 logging.basicConfig(level=logging.INFO,
@@ -132,8 +130,8 @@ try:
         pipeline_hexcolour = '#62a832'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
-    # geolocation_update_current(cursor, db)
-    # logger.info('geolocation_update_current completed')
+    geolocation_update_current(cursor, db)
+    logger.info('geolocation_update_current completed')
     try:
         geolocation_insert_excess(cursor, db)
         logger.info('geolocation_insert_excess completed')

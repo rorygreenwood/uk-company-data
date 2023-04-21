@@ -1,0 +1,23 @@
+name: SicCodePipeline
+
+pr: none
+trigger: none
+
+resources:
+  pipelines:
+    - pipeline: Previous Pipeline Trigger # name of this pipeline resource - doesn't affect pipeline itself
+      source: companies_house_pipeline # name of the pipeline you are referencing
+      project: Data_Engineering # use this to refer to the project where the source pipeline can be found
+      trigger: true # enables triggering
+
+
+variables:
+- group: hgdata-pipeline-variables
+pool: 'Default'
+
+steps:
+- script: pip install -r requirements.txt
+  displayName: install requirements for datatransfer
+- script:
+    python3 sic_code_counter.py $(preprodhost) $(adminuser) $(adminpass) $(database)
+  displayName: Execute the file

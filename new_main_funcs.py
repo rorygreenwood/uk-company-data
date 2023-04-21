@@ -1,6 +1,6 @@
-from file_parser.utils import pipeline_messenger
-from locker import connect_preprod
 import logging
+
+from locker import connect_preprod
 
 cursor, db = connect_preprod()
 
@@ -134,6 +134,7 @@ def del_from_org(cursor, db):
                        )
         db.commit()
 
+
 # GEOLOCATION
 
 def geolocation_md5_gen(cursor, db):
@@ -227,4 +228,3 @@ inner join isic_level_3 il3 on sc.code = il3.sic_code_1
 where iom.organisation_id is null
     """)
     db.commit()
-
