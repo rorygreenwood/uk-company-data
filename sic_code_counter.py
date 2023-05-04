@@ -32,7 +32,7 @@ union_query_tuple_last_month = (
 )
 # use 'union' to put all the sic_columns into a single column for both tables, within a single table
 # todo add format args to include dates declared above
-
+print(first_day_of_this_month_table_name)
 union_query_str = f"""insert into BasicCompanyData_DA873_sic_company_combined
 select distinct * from (
 select t1.` CompanyNumber`, CompanyName,
@@ -64,10 +64,10 @@ select t1.` CompanyNumber`, CompanyName,
 from %s t1 where `SICCode.SicText_4` <> '') t1
 order by t1.` CompanyNumber` desc """
 
-cursor.execute(union_query_str, union_query_tuple_this_month)
-db.commit()
-cursor.execute(union_query_str, union_query_tuple_last_month)
-db.commit()
+# cursor.execute(union_query_str, union_query_tuple_this_month)
+# db.commit()
+# cursor.execute(union_query_str, union_query_tuple_last_month)
+# db.commit()
 # perform query to map results to established sic codes
 cursor.execute("""insert into basiccompanydata_DA873_sic_totals_from_fragments
 select t1.SIC_code_1 as sic_code,

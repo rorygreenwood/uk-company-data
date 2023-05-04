@@ -89,7 +89,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check update_org_website: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
     try:
@@ -98,7 +98,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check update_org_activity: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
     try:
@@ -107,7 +107,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check write_to-org: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
     # add and update sic
@@ -117,7 +117,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check sql_sic: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
     # add and update addresses
@@ -127,7 +127,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check geolocation_md5_gem: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
     geolocation_update_current(cursor, db)
@@ -138,7 +138,7 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check geolocation_insert_excess: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
 
@@ -149,13 +149,13 @@ try:
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
         pipeline_message = f'check del_from_org: {e}'
-        pipeline_hexcolour = '#62a832'
+        pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
 except Exception as err:
     pipeline_title = 'Companies House File Pipeline Failed'
     pipeline_message = f'File Date: {ch_upload_date} - {err}'
-    pipeline_hexcolour = '#62a832'
+    pipeline_hexcolour = '#c40000'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
     quit()
 
@@ -168,5 +168,5 @@ db.commit()
 
 pipeline_title = 'Companies House File loaded'
 pipeline_message = f'File Date: {ch_upload_date}'
-pipeline_hexcolour = '#62a832'
+pipeline_hexcolour = '#00c400'
 pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
