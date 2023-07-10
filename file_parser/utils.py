@@ -8,7 +8,7 @@ from filesplit.split import Split
 
 
 def date_check(file_date: datetime.date, cursor):
-    cursor.execute("select * from BasicCompanyData_filetracker where ch_upload_date = %s", (file_date,))
+    cursor.execute("select * from BasicCompanyData_filetracker where MONTH(ch_upload_date) = MONTH(%s)", (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
         print('exists')

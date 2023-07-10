@@ -43,8 +43,16 @@ firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today(
 verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 if verif_check:
     logger.info('file already exists in tracker')
+    pipeline_title = 'Companies House File Pipeline Complete'
+    pipeline_message = 'No new File'
+    pipeline_hexcolour = '#c40000'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
     quit()
-
+else:
+    pipeline_title = 'Companies House File Pipeline'
+    pipeline_message = f'New Companies House File'
+    pipeline_hexcolour = '##00c400'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 # check for pre-existing files to be loaded first
 fragment_list = os.listdir('file_downloader/files/fragments/')
 
