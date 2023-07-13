@@ -1,7 +1,7 @@
 mysql~=0.0.3
 mysql-connector-python~=8.0.32
-filesplit~=4.0.1
-SQLAlchemy~=1.4.46
-pandas~=1.5.3
 requests~=2.28.2
-boto3~=1.26.52
+filesplit~=4.0.1
+pandas~=1.5.3
+polars~=0.18.7
+SQLAlchemy~=1.4.46
