@@ -1,4 +1,5 @@
 import mysql.connector
+import os
 
 dtype_dict = {
     'company_name': str,
@@ -191,7 +192,6 @@ dtype_dict_columns_input = [
 dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
                    range(len(dtype_dict_columns_input))}
 
-sic_code_columns = ['comp']
 org_del_query_list = [
     """delete from organisation_filing_history where organisation_id in (select o.id from organisation o
     inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
@@ -242,36 +242,13 @@ or org_2_id in (select o.id from organisation o
 
 def connect_preprod():
     db = mysql.connector.connect(
-        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
-        user='rory',
-        passwd='Me._7;cBsqQ$]JX}',
-        database='iqblade'
+        host=os.environ.get('host'),
+        user=os.environ.get('user'),
+        passwd=os.environ.get('pass'),
+        database=os.environ.get('database')
     )
 
     cursor = db.cursor()
     return cursor, db
 
-#
-# def connect_preprod(host, user, passwd, db):
-#     db = mysql.connector.connect(
-#         host=host,
-#         user=user,
-#         passwd=passwd,
-#         database=db
-#     )
-#
-#     cursor = db.cursor()
-#     return cursor, db
-#
-# host = 'put host string here'
-# user = 'put username here'
-# passwd = 'put passwd here'
-# db = 'put db here'
-#
-# cursor, db = connect_preprod(host, user, passwd, db)
-#
-# sql_query_str = """put multi-line query in here"""
-# # perform query
-# cursor.execute(sql_query_str)
-# # return results of query
-# cursor.fetchall()
+

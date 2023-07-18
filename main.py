@@ -6,7 +6,7 @@ import time
 import mysql.connector
 
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
-from file_parser.fragment_work import parse_fragment, parse_fragment_polars
+from file_parser.fragment_work import parse_fragment_polars
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
 from new_main_funcs import *
 
