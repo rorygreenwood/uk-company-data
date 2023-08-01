@@ -2,6 +2,7 @@ import re
 from locker import connect_preprod
 import pandas as pd
 
+
 def sic_code_processing(cursor, db):
     """ load all results from monthly parse - divide sic code from text and insert into"""
     cursor.execute("""select * from raw_companies_house_data""")
@@ -12,9 +13,6 @@ def sic_code_processing(cursor, db):
         for sic in siclist:
             if sic is not None:
                 sic_code = re.findall(r'\d+', sic)[0]
-                print(sic)
-                print(sic_code)
-                print('-')
             elif sic == 'None Supplied':
                 sic_code = 'None Supplied'
             else:
@@ -23,6 +21,7 @@ def sic_code_processing(cursor, db):
                 """insert ignore into sic_code (code, organisation_id, company_number) VALUES (%s, %s, %s)""",
                 (sic_code, org_id, company_number))
             db.commit()
+
 
 def sic_code_processing_wpandas(cursor, db):
     processable = 1

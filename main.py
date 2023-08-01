@@ -9,21 +9,16 @@ from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment_polars
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
 from new_main_funcs import *
+import os
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-if len(sys.argv) > 2:
-    host = sys.argv[1]
-    user = sys.argv[2]
-    passwd = sys.argv[3]
-    database = sys.argv[4]
-else:
-    host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-    user = 'rory'
-    passwd = 'Me._7;cBsqQ$]JX}'
-    database = 'iqblade'
+host = os.environ.get('preprodhost')
+user = os.environ.get('preproduser')
+passwd = os.environ.get('preprodpasswd')
+database = os.environ.get('preproddb')
 
 db = mysql.connector.connect(
     host=host,
