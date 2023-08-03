@@ -1,32 +1,23 @@
 import datetime
-import os
-import sys
 import time
-
-import mysql.connector
 
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment_polars
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
-from new_main_funcs import *
+from _rec.new_main_funcs import *
 import os
+from locker import connect_preprod
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-host = os.environ.get('preprodhost')
-user = os.environ.get('preproduser')
-passwd = os.environ.get('preprodpasswd')
-database = os.environ.get('preproddb')
+host = os.environ.get('HOST')
+user = os.environ.get('ADMINUSER')
+passwd = os.environ.get('ADMINPASS')
+database = os.environ.get('DATABASE')
 
-db = mysql.connector.connect(
-    host=host,
-    user=user,
-    passwd=passwd,
-    database=database
-)
-cursor = db.cursor()
+cursor, db = connect_preprod()
 
 schema = 'iqblade'
 

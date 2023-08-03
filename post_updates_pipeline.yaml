@@ -15,7 +15,6 @@ steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
 - script: |
-    python3 post_inserts_organisation.py
     python3 post_insert_updates_address.py
     python3 post_insert_updates_sic.py
   displayName: Execute the file

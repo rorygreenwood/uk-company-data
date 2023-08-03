@@ -242,13 +242,11 @@ or org_2_id in (select o.id from organisation o
 
 def connect_preprod():
     db = mysql.connector.connect(
-        host=os.environ.get('host'),
-        user=os.environ.get('user'),
-        passwd=os.environ.get('pass'),
-        database=os.environ.get('database')
+        host=os.environ.get('HOST'),
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
+        database=os.environ.get('DATABASE'),
     )
 
     cursor = db.cursor()
     return cursor, db
-
-

@@ -33,7 +33,8 @@ union_query_tuple_last_month = (
 # use 'union' to put all the sic_columns into a single column for both tables, within a single table
 # todo add format args to include dates declared above
 print(first_day_of_this_month_table_name)
-union_query_str = f"""insert into BasicCompanyData_DA873_sic_company_combined
+union_query_str = f"""
+insert into BasicCompanyData_DA873_sic_company_combined
 select distinct * from (
 select t1.` CompanyNumber`, CompanyName,
        1 as sic_section,
