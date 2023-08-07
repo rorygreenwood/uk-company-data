@@ -35,7 +35,17 @@ def address_processing(cursor, db):
         cursor.execute("""insert into geo_location
         (organisation_id, address_1, address_2, town, county, post_code, post_code_formatted, area_location,
         address_type) VALUES (%s, %s, %ws, %s, %s, %s, %s, %s, %s)
-        """, (org_id, line1, line2, posttown, county, postcode, format_postcode, county, office_type))
+        on duplicate key update 
+        address_1 = %s,
+        address_2 = %s,
+        town = %s,
+        county = %s,
+        post_code = %s,
+        post_code_formatted = %s,
+        area_location = %s,
+        address_type = %s
+        """, (org_id, line1, line2, posttown, county, postcode, format_postcode, county, office_type,
+              line1, line2, posttown, county, postcode, format_postcode, county, office_type))
         db.commit()
 
 
