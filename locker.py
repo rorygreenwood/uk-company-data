@@ -129,7 +129,7 @@ dtype_dict_columns_output = [
 # columns in csv
 dtype_dict_columns_input = [
     'CompanyName'
-    , 'CompanyNumber'
+    , ' CompanyNumber'
     , '`RegAddress.CareOf`'
     , '`RegAddress.POBox`'
     , '`RegAddress.AddressLine1`'
