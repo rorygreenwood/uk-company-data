@@ -12,6 +12,7 @@ from locker import *
 def parse_fragment_polars(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pl.read_csv(fragment, encoding='utf-8', low_memory=False)
+    print(df.columns)
     # transform
     df.rename(dtype_dict_comp)
     df['SourceFile'] = fragment
