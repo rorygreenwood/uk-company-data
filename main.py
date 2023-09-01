@@ -4,7 +4,7 @@ import time
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
 from file_parser.fragment_work import parse_fragment_polars
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
-from new_main_funcs import *
+from main_funcs import *
 import os
 from locker import connect_preprod
 
@@ -152,12 +152,12 @@ except Exception as err:
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
     quit()
 
-# when done, update filetracker
-filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
-cursor.execute(
-    """insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""",
-    filetracker_tup)
-db.commit()
+# when done, update filetracker (DEPRECATED SINCE 03/03/23??)
+# filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
+# cursor.execute(
+#     """insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""",
+#     filetracker_tup)
+# db.commit()
 
 pipeline_title = 'Companies House File loaded'
 pipeline_message = f'File Date: {ch_upload_date}'
