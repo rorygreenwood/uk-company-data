@@ -153,11 +153,11 @@ except Exception as err:
     quit()
 
 # when done, update filetracker (DEPRECATED SINCE 03/03/23??)
-# filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
-# cursor.execute(
-#     """insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""",
-#     filetracker_tup)
-# db.commit()
+filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
+cursor.execute(
+    """insert into BasicCompanyData_filetracker (filename, ch_upload_date, lastDownloaded, lastProcessed) VALUES (%s, %s, %s, %s)""",
+    filetracker_tup)
+db.commit()
 
 pipeline_title = 'Companies House File loaded'
 pipeline_message = f'File Date: {ch_upload_date}'
