@@ -89,7 +89,7 @@ def parse_fragment_polars(fragment: str, host: str, user: str, passwd: str, db, 
     cursordb.commit()
 
 
-def parse_fragment_retro(fragment, host, user, passwd, db, cursor, cursordb, company_file_table):
+def _parse_fragment(fragment, host, user, passwd, db, cursor, cursordb, company_file_table):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     dbEngine = sqlalchemy.create_engine(constring)
 
@@ -97,7 +97,6 @@ def parse_fragment_retro(fragment, host, user, passwd, db, cursor, cursordb, com
                      # usecols=['company_number', 'company_name', 'sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4']
                      )
     # df.rename(columns=dtype_dict_comp, inplace=True)
-    # todo need to have a table created for each stage based on data of file, this file must then be
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
     # may change to this line after deprecations
