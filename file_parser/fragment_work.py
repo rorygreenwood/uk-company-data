@@ -9,9 +9,9 @@ from locker import *
 
 # using the polars library
 # takes a fragment and transforms the csv before writing to the staging table
-def parse_fragment_polars(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
+def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
-    df = pl.read_csv(fragment, encoding='utf-8', low_memory=False)
+    df = pd.read_csv(fragment, encoding='utf-8', low_memory=False)
     print(df.columns)
     # transform
     df.rename(dtype_dict_comp)
