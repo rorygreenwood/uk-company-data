@@ -12,17 +12,16 @@ from locker import *
 def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, encoding='utf-8', low_memory=False)
-    print(df.columns)
     # transform
-    df.rename(dtype_dict_comp)
+    df.rename(columns=dtype_dict_comp, inplace=True)
     df['SourceFile'] = fragment
     df['Date_of_insert'] = datetime.datetime.today()
     df['number_of_employees'] = None
     df['phone_number'] = ''
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
-    df.write_database(table_name='raw_companies_house_input_stage_df', connection_uri=constring, if_exists='append',
-                      engine='sqlalchemy')
+    df.to_sql(name='raw_companies_house_input_stage_df', con=constring, if_exists='append',
+              index=False)
     cursor.execute("""insert into raw_companies_house_input_stage select * from raw_companies_house_input_stage_df
     on duplicate key update
     raw_companies_house_input_stage.company_name = raw_companies_house_input_stage_df.company_name,

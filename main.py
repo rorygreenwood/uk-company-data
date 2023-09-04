@@ -7,7 +7,7 @@ from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipel
 from main_funcs import *
 import os
 from locker import connect_preprod
-
+start_time = time.time()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
@@ -36,7 +36,7 @@ if verif_check:
     quit()
 else:
     pipeline_title = 'Companies House File Pipeline'
-    pipeline_message = f'New Companies House File'
+    pipeline_message = f'New Companies House File: {firstDayOfMonth}'
     pipeline_hexcolour = '##00c400'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
 # check for pre-existing files to be loaded first
@@ -57,6 +57,8 @@ else:
     ch_upload_date = firstDayOfMonth
 
 logger.info('loading fragments...')
+fragment_number = len(fragment_list)
+fragment_loading_start = time.time()
 for fragment in fragment_list:
     print(fragment)
     if fragment != 'fragments.txt':
@@ -70,7 +72,11 @@ for fragment in fragment_list:
         logger.info(f'parse time for this iteration: {final_time}')
     else:
         pass
+fragment_loading_end = time.time()
 
+fragment_loading_time = fragment_loading_end - fragment_loading_start
+
+integration_with_preprod_start = time.time()
 try:
     # add org_id and md5 on rchis
     add_organisation_id(cursor, db)
@@ -151,7 +157,8 @@ except Exception as err:
     pipeline_hexcolour = '#c40000'
     pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
     quit()
-
+integration_with_preprod_end = time.time()
+time_integration_with_preprod = integration_with_preprod_end - integration_with_preprod_start
 # when done, update filetracker (DEPRECATED SINCE 03/03/23??)
 filetracker_tup = (str_ch_file, ch_upload_date, datetime.datetime.now(), datetime.datetime.now())
 cursor.execute(
@@ -159,7 +166,14 @@ cursor.execute(
     filetracker_tup)
 db.commit()
 
+end_time = time.time()
+pipeline_time = end_time-start_time
 pipeline_title = 'Companies House File loaded'
-pipeline_message = f'File Date: {ch_upload_date}'
+pipeline_message = f"""File Date: {ch_upload_date}
+Number of Fragments preload: {fragment_number}
+Time taken on loading fragments: {fragment_loading_time}
+Time taken on total pipeline: {pipeline_time}
+Avg time per fragment: {fragment_loading_time/fragment_number}
+"""
 pipeline_hexcolour = '#00c400'
 pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
