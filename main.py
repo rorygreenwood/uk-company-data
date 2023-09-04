@@ -2,7 +2,7 @@ import datetime
 import time
 
 from file_downloader.companyhouse_transfer import collect_companieshouse_file
-from file_parser.fragment_work import parse_fragment_polars
+from file_parser.fragment_work import parse_fragment
 from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
 from main_funcs import *
 import os
@@ -62,7 +62,7 @@ for fragment in fragment_list:
     if fragment != 'fragments.txt':
         logger.info(fragment)
         st = time.time()
-        parse_fragment_polars(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd,
+        parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd,
                               db=database, cursor=cursor, cursordb=db)
         os.remove(f'file_downloader/files/fragments/{fragment}')
         et = time.time()
