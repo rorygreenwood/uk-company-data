@@ -135,6 +135,22 @@ def del_from_org(cursor, db):
         db.commit()
 
 
+def find_more_postcodes(cursor, db):
+    """
+    mysql query that finds companies house records without a value in their postcode column
+    uses a regexp_substr function to find a postcode in a concat of the rest of the address. Sometimes
+    the postcode can be found in there. If found, update the record with the new postcode
+    """
+    cursor.execute("""update raw_companies_house_input_stage
+    set reg_address_postcode = REGEXP_SUBSTR(concat(reg_address_line1, ' ', reg_address_line2
+    , ' ', reg_address_posttown,' ', reg_address_county), '[A-Z]{1,2}[0-9]+ +[0-9]+[A-Z]+')
+        where reg_address_postcode is null
+          and REGEXP_SUBSTR(concat(reg_address_line1, ' ', reg_address_line2
+    , ' ', reg_address_posttown,' ', reg_address_county), '[A-Z]{1,2}[0-9]+ +[0-9]+[A-Z]+') is not null;
+    """)
+    db.commit()
+
+
 # GEOLOCATION
 
 def geolocation_md5_gen(cursor, db):
@@ -167,7 +183,8 @@ def geolocation_insert_excess(cursor, db):
         reg_address_line1, reg_address_line2
         , reg_address_posttown, reg_address_county,
          reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
-          LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number), gl.md5_key
+          LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number),
+           md5(concat(rchis.organisation_id, reg_address_postcode))
         from raw_companies_house_input_stage rchis
         left join geo_location gl on gl.md5_key = rchis.md5_key
         where gl.md5_key is null""")

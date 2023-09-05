@@ -105,7 +105,7 @@ try:
         logger.info('write_to_org completed')
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check write_to-org: {e}'
+        pipeline_message = f'check write_to_org: {e}'
         pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
@@ -121,16 +121,26 @@ try:
         quit()
     # add and update addresses
     try:
+        # find postcodes amongst other address columns
+        find_more_postcodes(cursor, db)
+        # produce md5 to use as unique key
         geolocation_md5_gen(cursor, db)
         logger.info('geolocation_md5_gen completed')
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check geolocation_md5_gem: {e}'
+        pipeline_message = f'check geolocation_md5_gen: {e}'
         pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
-    geolocation_update_current(cursor, db)
-    logger.info('geolocation_update_current completed')
+    try:
+        geolocation_update_current(cursor, db)
+        logger.info('geolocation_update_current completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check geolocation_update_current: {e}'
+        pipeline_hexcolour = '#c40000'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
     try:
         geolocation_insert_excess(cursor, db)
         logger.info('geolocation_insert_excess completed')
