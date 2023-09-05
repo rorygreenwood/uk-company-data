@@ -10,6 +10,19 @@ from locker import *
 # using the polars library
 # takes a fragment and transforms the csv before writing to the staging table
 def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
+    """
+    takes a filepath of a fragment and preprod credentials
+    turns fragment into dataframe, prepares and inserts into companies house staging table
+
+    :param fragment:
+    :param host:
+    :param user:
+    :param passwd:
+    :param db:
+    :param cursor:
+    :param cursordb:
+    :return:
+    """
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, encoding='utf-8', low_memory=False)
     # transform

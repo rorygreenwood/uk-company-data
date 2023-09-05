@@ -12,12 +12,18 @@ logger = logging.getLogger()
 # COMPANIES HOUSE TABLE
 
 def add_organisation_id(cursor, db):
+    """
+    adds organisation id to company in raw companies house file
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""update raw_companies_house_input_stage
      set organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
     db.commit()
 
 
-def add_organisation_id_retro(cursor, db):
+def _add_organisation_id_retro(cursor, db):
     cursor.execute("""update raw_companies_house_input_stage
      set organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
     db.commit()
@@ -26,6 +32,12 @@ def add_organisation_id_retro(cursor, db):
 # ORGANISATION WORK
 
 def write_to_org(cursor, db):
+    """
+    write new companies into organisation from companies house staging table
+    :param cursor:
+    :param db:
+    :return:
+    """
     # insert into organisation as well
     cursor.execute("""insert ignore into organisation (id, company_name,
                                  company_number,
@@ -43,6 +55,12 @@ def write_to_org(cursor, db):
 
 
 def update_org_website(cursor, db):
+    """
+    if a company does not have a website in organisation, update with new website from companies house raw file
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""update organisation o
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
                         set 
@@ -54,18 +72,33 @@ def update_org_website(cursor, db):
 
 
 def update_org_activity(cursor, db):
+    """
+    update companies with new activity status
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""
     update organisation o
     inner join raw_companies_house_input_stage rchis
     on o.id = rchis.organisation_id
     set o.company_status = rchis.company_status,
-    last_modified_by = 'Rory',
-    last_modified_date = CURDATE()""")
+    last_modified_by = 'Rory - update_org_activity',
+    last_modified_date = CURDATE()
+    where o.company_status != rchis.company_status
+    """)
 
     db.commit()
 
 
 def del_from_org(cursor, db):
+    """
+    iterates over several delete statements to remove records of a company from all tables linked to organisation
+    and then delete the row itself.
+    :param cursor:
+    :param db:
+    :return:
+    """
     table_set_a = ['organisation_filing_history', 'organisation_officer_appointment', 'sic_code', 'geo_location',
                    'organisation_digital_maturity', 'director', 'alias_name', 'isic_organisations_mapped',
                    'domain_alias', 'tags', 'social_handles', 'frontend_quicksearch_history', 'hgdata_entries',
@@ -137,9 +170,12 @@ def del_from_org(cursor, db):
 
 def find_more_postcodes(cursor, db):
     """
-    mysql query that finds companies house records without a value in their postcode column
+        mysql query that finds companies house records without a value in their postcode column
     uses a regexp_substr function to find a postcode in a concat of the rest of the address. Sometimes
     the postcode can be found in there. If found, update the record with the new postcode
+    :param cursor:
+    :param db:
+    :return:
     """
     cursor.execute("""update raw_companies_house_input_stage
     set reg_address_postcode = REGEXP_SUBSTR(concat(reg_address_line1, ' ', reg_address_line2
@@ -154,12 +190,24 @@ def find_more_postcodes(cursor, db):
 # GEOLOCATION
 
 def geolocation_md5_gen(cursor, db):
+    """
+    Generate md5 hash in the companies house staging table
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""update raw_companies_house_input_stage
     set md5_key = MD5(CONCAT(organisation_id, reg_address_postcode)) where md5_key is null """)
     db.commit()
 
 
 def geolocation_update_current(cursor, db):
+    """
+    MySQL query to update existing records in geo_location
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""update geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
             set gl.address_1 = rchis.reg_address_line1,
             gl.address_2 = rchis.reg_address_line2,
@@ -174,6 +222,12 @@ def geolocation_update_current(cursor, db):
 
 
 def geolocation_insert_excess(cursor, db):
+    """
+    Bulk Insert ignore statement from staging table to geo_location
+    :param cursor:
+    :param db:
+    :return:
+    """
     cursor.execute("""insert ignore into geo_location
         (address_1, address_2,
          town, county,
@@ -193,6 +247,12 @@ def geolocation_insert_excess(cursor, db):
 
 # SIC
 def sql_sic(cursor, db):
+    """
+    insert sic_code data from staging table to sic_code table. different queries from multiple sic columns
+    :param cursor:
+    :param db:
+    :return:
+    """
     # for sic_text_1
     logger.info('starting sql_sic')
     cursor.execute("""insert ignore into sic_code (code, organisation_id, company_number, md5)
