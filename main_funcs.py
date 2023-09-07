@@ -48,7 +48,7 @@ def write_to_org(cursor, db):
                                company_name, company_number,
                                company_status,
                                'UNITED KINGDOM', STR_TO_DATE(IncorporationDate, '%d/%m/%Y'),
-                               'CompaniesHouseDataTransfer - Rory', CURDATE(), 'UK' from raw_companies_house_input_stage
+                               'Rory - CHP - write_to_org', CURDATE(), 'UK' from raw_companies_house_input_stage
                                 where CONCAT('UK', company_number) not in
                                 (select id from organisation_insert_test where country = 'UNITED KINGDOM')""")
     db.commit()
@@ -65,7 +65,7 @@ def update_org_website(cursor, db):
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
                         set 
                         o.website = rchis.URI,
-                        last_modified_by = 'Rory',
+                        last_modified_by = 'Rory - CHP - update_org_website',
                         last_modified_date = CURDATE()
                          where o.website is null and o.website <> ''""")
     db.commit()
@@ -83,7 +83,7 @@ def update_org_activity(cursor, db):
     inner join raw_companies_house_input_stage rchis
     on o.id = rchis.organisation_id
     set o.company_status = rchis.company_status,
-    last_modified_by = 'Rory - update_org_activity',
+    last_modified_by = 'Rory - CHP - update_org_activity',
     last_modified_date = CURDATE()
     where o.company_status != rchis.company_status
     """)
@@ -217,7 +217,9 @@ def geolocation_update_current(cursor, db):
             gl.area_location = rchis.reg_address_county,
             gl.post_code = rchis.reg_address_postcode,
             gl.post_code_formatted = LOWER(TRIM(rchis.reg_address_postcode)),
-            gl.md5_key = rchis.md5_key
+            gl.md5_key = rchis.md5_key,
+            gl.date_last_modified = curdate(),
+            gl.last_modified_by = 'Rory - CHP - geolocation_update_current'
             where gl.md5_key <> rchis.md5_key and gl.md5_key is null;""")
     db.commit()
 
@@ -233,13 +235,13 @@ def geolocation_insert_excess(cursor, db):
         (address_1, address_2,
          town, county,
           post_code, area_location, country, address_type,
-           post_code_formatted, organisation_id, md5_key)
+           post_code_formatted, organisation_id, md5_key, date_last_modified, last_modified_by)
         select
         reg_address_line1, reg_address_line2
         , reg_address_posttown, reg_address_county,
          reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
           LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number),
-           md5(concat(rchis.organisation_id, reg_address_postcode))
+           md5(concat(rchis.organisation_id, reg_address_postcode)), curdate(), 'Rory - CHP - geo_location_insert'
         from raw_companies_house_input_stage rchis
         left join geo_location gl on gl.md5_key = rchis.md5_key
         where gl.md5_key is null""")
