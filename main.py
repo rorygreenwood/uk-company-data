@@ -123,6 +123,7 @@ try:
     # add and update addresses
     try:
         # find postcodes amongst other address columns
+        logger.info('finding more postcodes')
         find_more_postcodes(cursor, db)
         # produce md5 to use as unique key
         geolocation_md5_gen(cursor, db)
