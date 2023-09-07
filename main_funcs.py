@@ -208,7 +208,8 @@ def geolocation_update_current(cursor, db):
     :param db:
     :return:
     """
-    cursor.execute("""update geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
+    cursor.execute("""
+    update geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
             set gl.address_1 = rchis.reg_address_line1,
             gl.address_2 = rchis.reg_address_line2,
             gl.town = rchis.reg_address_posttown,
@@ -217,7 +218,7 @@ def geolocation_update_current(cursor, db):
             gl.post_code = rchis.reg_address_postcode,
             gl.post_code_formatted = LOWER(TRIM(rchis.reg_address_postcode)),
             gl.md5_key = rchis.md5_key
-            where gl.md5_key <> rchis.md5_key;""")
+            where gl.md5_key <> rchis.md5_key and gl.md5_key is null;""")
     db.commit()
 
 

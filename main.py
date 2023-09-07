@@ -7,6 +7,7 @@ from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipel
 from main_funcs import *
 import os
 from locker import connect_preprod
+
 start_time = time.time()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
@@ -65,7 +66,7 @@ for fragment in fragment_list:
         logger.info(fragment)
         st = time.time()
         parse_fragment(f'file_downloader/files/fragments/{fragment}', host=host, user=user, passwd=passwd,
-                              db=database, cursor=cursor, cursordb=db)
+                       db=database, cursor=cursor, cursordb=db)
         os.remove(f'file_downloader/files/fragments/{fragment}')
         et = time.time()
         final_time = et - st
@@ -140,7 +141,7 @@ try:
         pipeline_message = f'check geolocation_update_current: {e}'
         pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
+        # quit()
     try:
         geolocation_insert_excess(cursor, db)
         logger.info('geolocation_insert_excess completed')
@@ -177,13 +178,13 @@ cursor.execute(
 db.commit()
 
 end_time = time.time()
-pipeline_time = end_time-start_time
+pipeline_time = end_time - start_time
 pipeline_title = 'Companies House File loaded'
 pipeline_message = f"""File Date: {ch_upload_date}
 Number of Fragments preload: {fragment_number}
 Time taken on loading fragments: {fragment_loading_time}
 Time taken on total pipeline: {pipeline_time}
-Avg time per fragment: {fragment_loading_time/fragment_number}
+Avg time per fragment: {fragment_loading_time / fragment_number}
 """
 pipeline_hexcolour = '#00c400'
 pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
