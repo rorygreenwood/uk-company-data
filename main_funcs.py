@@ -71,6 +71,23 @@ def update_org_website(cursor, db):
     db.commit()
 
 
+def update_org_name(cursor, db):
+    """
+
+    :param cursor:
+    :param db:
+    :return:
+    """
+    cursor.execute("""update organisation o
+                        inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
+                        set 
+                        o.company_name = rchis.company_name,
+                        last_modified_by = 'Rory - CHP - update_org_name',
+                        last_modified_date = CURDATE()
+                         where o.website is null and o.website <> ''""")
+    db.commit()
+
+
 def update_org_activity(cursor, db):
     """
     update companies with new activity status

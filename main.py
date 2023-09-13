@@ -84,6 +84,15 @@ try:
     logger.info('add_organisation_id completed')
     # update to organisation (add ids, update ids)
     try:
+        update_org_name(cursor, db)
+        logger.info('update_org_name completed')
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f'check update_org_name: {e}'
+        pipeline_hexcolour = '#c40000'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
+    try:
         update_org_website(cursor, db)
         logger.info('update_org_website completed')
     except Exception as e:
