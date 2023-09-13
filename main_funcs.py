@@ -84,7 +84,7 @@ def update_org_name(cursor, db):
                         o.company_name = rchis.company_name,
                         last_modified_by = 'Rory - CHP - update_org_name',
                         last_modified_date = CURDATE()
-                         where o.website is null and o.website <> ''""")
+                         where o.company_name <> rchis.company_name and o.company_number = rchis.company_number""")
     db.commit()
 
 
