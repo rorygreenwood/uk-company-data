@@ -13,7 +13,8 @@ logger = logging.getLogger()
 
 def add_organisation_id(cursor, db):
     """
-    adds organisation id to company in raw companies house file
+    adds organisation id to company in raw companies house file table,
+    required for insertion to organisation
     :param cursor:
     :param db:
     :return:
@@ -209,6 +210,11 @@ def find_more_postcodes(cursor, db):
 def geolocation_md5_gen(cursor, db):
     """
     Generate md5 hash in the companies house staging table
+    We use organisation_id, postcode, country and address_type because
+    address_1 and address_2 can be null values
+    as of 29/09/23 837k rows don't have address_1, 2.9m don't have address_2 and 800k have neither
+    (across all countries)
+    for uk this is 115, 21k
     :param cursor:
     :param db:
     :return:
@@ -219,14 +225,18 @@ def geolocation_md5_gen(cursor, db):
 
 
 def geolocation_update_current(cursor, db):
+    # todo rewrite for following:
+    # todo write to new table to update, then insert ignore, then truncate, then review remaining
     """
-    MySQL query to update existing records in geo_location
+    MySQL query to update existing records in geo_location, some companies will have changed there head office
+    and this needs to be reflected.
+    TODO this is failing due to a duplicate update, how?
     :param cursor:
     :param db:
     :return:
     """
     cursor.execute("""
-    update geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
+    update ignore geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
             set gl.address_1 = rchis.reg_address_line1,
             gl.address_2 = rchis.reg_address_line2,
             gl.town = rchis.reg_address_posttown,
@@ -237,7 +247,9 @@ def geolocation_update_current(cursor, db):
             gl.md5_key = rchis.md5_key,
             gl.date_last_modified = curdate(),
             gl.last_modified_by = 'Rory - CHP - geolocation_update_current'
-            where gl.md5_key <> rchis.md5_key and gl.md5_key is null;""")
+            where gl.md5_key <> rchis.md5_key and gl.organisation_id = rchis.organisation_id
+            and gl.address_type = 'HEAD_OFFICE';"""
+                   )
     db.commit()
 
 
@@ -248,7 +260,7 @@ def geolocation_insert_excess(cursor, db):
     :param db:
     :return:
     """
-    cursor.execute("""insert ignore into geo_location
+    cursor.execute("""insert into geo_location
         (address_1, address_2,
          town, county,
           post_code, area_location, country, address_type,
@@ -262,6 +274,53 @@ def geolocation_insert_excess(cursor, db):
         from raw_companies_house_input_stage rchis
         left join geo_location gl on gl.md5_key = rchis.md5_key
         where gl.md5_key is null""")
+    db.commit()
+
+
+def geolocation_clean_suboffices(cursor, db):
+    """
+    delete sub_offices in geo_location that do not exist in current companies house file.
+    if these do not
+    :param cursor:
+    :param db:
+    :return:
+    """
+    cursor.execute("""select
+    gl.md5_key
+from
+    (select
+         md5_key
+     from geo_location
+     where
+         country = 'UK' and
+         address_type = 'SUB_OFFICE') gl
+left join raw_companies_house_input_stage rchis on gl.md5_key = rchis.md5_key
+where rchis.md5_key is null""")
+    db.commit()
+
+
+def _geolocation_clean_headoffices(cursor, db):
+    """
+    removes head office addresses that do not appear in the raw companies house file.
+    If they do not appear in the companies house file for the month, we can assume the address is no longer part
+    of the company?
+    todo as of 15/09/23 not using this
+    :param cursor:
+    :param db:
+    :return:
+    """
+    cursor.execute("""delete from geo_location where md5_key in (
+select
+    gl.md5_key
+from
+    (select
+         md5_key
+     from geo_location
+     where
+         country = 'UK' and
+         address_type = 'HEAD_OFFICE') gl
+left join raw_companies_house_input_stage rchis on gl.md5_key = rchis.md5_key
+where rchis.md5_key is null)""")
     db.commit()
 
 
