@@ -25,9 +25,18 @@ schema = 'iqblade'
 # t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
 logger.info('downloading file')
-firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, 1)
+firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, datetime.date.today().day)
 # verify that a new file needs to be downloaded
-verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
+try:
+    verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
+except Exception as e:
+    pipeline_title = 'Companies House File Pipeline Failed'
+    pipeline_message = f'verification check: {e}'
+    pipeline_hexcolour = '#c40000'
+    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    quit()
+
+# this conditional only tirggers if we specify a file to search for
 if verif_check:
     logger.info('file already exists in tracker')
     pipeline_title = 'Companies House File Pipeline Complete'
@@ -45,7 +54,17 @@ fragment_list = os.listdir('file_downloader/files/fragments/')
 
 # if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
 if len(fragment_list) == 1:
-    ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
+    try:
+        ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
+    except Exception as e:
+        pipeline_title = 'Companies House File Pipeline Failed'
+        pipeline_message = f"""
+        collect_companieshouse_file: {e}
+        file probably doesn't exist?
+        """
+        pipeline_hexcolour = '#c40000'
+        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        quit()
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
     unzipped_ch_file = unzip_ch_file(ch_file)

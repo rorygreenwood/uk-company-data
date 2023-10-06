@@ -225,12 +225,9 @@ def geolocation_md5_gen(cursor, db):
 
 
 def geolocation_update_current(cursor, db):
-    # todo rewrite for following:
-    # todo write to new table to update, then insert ignore, then truncate, then review remaining
     """
     MySQL query to update existing records in geo_location, some companies will have changed there head office
     and this needs to be reflected.
-    TODO this is failing due to a duplicate update, how?
     :param cursor:
     :param db:
     :return:
