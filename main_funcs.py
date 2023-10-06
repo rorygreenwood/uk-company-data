@@ -20,7 +20,8 @@ def add_organisation_id(cursor, db):
     :return:
     """
     cursor.execute("""update raw_companies_house_input_stage
-     set organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
+     set 
+     organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
     db.commit()
 
 
@@ -48,7 +49,7 @@ def write_to_org(cursor, db):
                         select CONCAT('UK', company_number),
                                company_name, company_number,
                                company_status,
-                               'UNITED KINGDOM', STR_TO_DATE(IncorporationDate, '%d/%m/%Y'),
+                               'UNITED KINGDOM', CURDATE(),
                                'Rory - CHP - write_to_org', CURDATE(), 'UK' from raw_companies_house_input_stage
                                 where CONCAT('UK', company_number) not in
                                 (select id from organisation_insert_test where country = 'UNITED KINGDOM')""")
@@ -113,6 +114,7 @@ def del_from_org(cursor, db):
     """
     iterates over several delete statements to remove records of a company from all tables linked to organisation
     and then delete the row itself.
+    DO NOT RUN - WE NOT LONGER DELETE FROM ORGANISATION
     :param cursor:
     :param db:
     :return:

@@ -1,12 +1,14 @@
 import datetime
 import time
 
-from file_downloader.companyhouse_transfer import collect_companieshouse_file
+from file_downloader.companyhouse_transfer import search_and_collect_ch_file
 from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, date_check, pipeline_messenger
+from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
 from main_funcs import *
 import os
 from locker import connect_preprod
+from file_parser.utils import date_check
+from pipeline_messenger_messages import *
 
 start_time = time.time()
 logging.basicConfig(level=logging.INFO,
@@ -25,42 +27,28 @@ schema = 'iqblade'
 # t_fragment_file = 'BasicCompanyDataAsOneFile-2023-01-01.csv'
 # download file
 logger.info('downloading file')
-firstDayOfMonth = datetime.date(datetime.date.today().year, datetime.date.today().month, datetime.date.today().day)
+firstDayOfMonth = datetime.date(datetime.date.today().year,
+                                datetime.date.today().month,
+                                datetime.date.today().day)
 # verify that a new file needs to be downloaded
 try:
     verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 except Exception as e:
-    pipeline_title = 'Companies House File Pipeline Failed'
-    pipeline_message = f'verification check: {e}'
-    pipeline_hexcolour = '#c40000'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    pipeline_messenger(title=ch_pipeline_fail, text=f'Verification Fail: {e}', hexcolour=hexcolour_red)
     quit()
 
 # this conditional only tirggers if we specify a file to search for
 if verif_check:
-    logger.info('file already exists in tracker')
-    pipeline_title = 'Companies House File Pipeline Complete'
-    pipeline_message = 'No new File'
-    pipeline_hexcolour = '#c40000'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+    pipeline_messenger(title=ch_pipeline_fail, text='No New File', hexcolour=hexcolour_red)
     quit()
 else:
-    pipeline_title = 'Companies House File Pipeline'
-    pipeline_message = f'New Companies House File: {firstDayOfMonth}'
-    pipeline_hexcolour = '##00c400'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-# check for pre-existing files to be loaded first
-fragment_list = os.listdir('file_downloader/files/fragments/')
-
-# if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
-if len(fragment_list) == 1:
+    pipeline_messenger(title=ch_pipeline, text=f'New File Found: {firstDayOfMonth}', hexcolour=hexcolour_green)
+    # check for pre-existing files to be loaded first
+    # if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
     try:
-        ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
+        ch_file, ch_upload_date = search_and_collect_ch_file(firstDayOfMonth)
     except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Complete'
-        pipeline_message = 'No new File'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
+        pipeline_messenger(title=ch_pipeline_fail, text=f'Collection Fail: {e}', hexcolour=hexcolour_red)
         quit()
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
@@ -68,10 +56,6 @@ if len(fragment_list) == 1:
     fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
-else:
-    # if fragments already present
-    str_ch_file = 'BasicCompanyDataAsOneFile-' + str(firstDayOfMonth) + '.zip'
-    ch_upload_date = firstDayOfMonth
 
 logger.info('loading fragments...')
 fragment_number = len(fragment_list)
@@ -90,110 +74,31 @@ for fragment in fragment_list:
     else:
         pass
 fragment_loading_end = time.time()
-
 fragment_loading_time = fragment_loading_end - fragment_loading_start
-
 integration_with_preprod_start = time.time()
-try:
-    # add org_id and md5 on rchis
-    add_organisation_id(cursor, db)
-    logger.info('add_organisation_id completed')
-    # update to organisation (add ids, update ids)
+
+func_list = [
+    (add_organisation_id, 'add_organisation_id'),  # adds organisation_id to the staging table rchis
+    (update_org_name, 'update_org_name'),  # update statement on organisation, pairing with rchis on org_id
+    (update_org_website, 'update_org_website'),  # update statement on organisation, pairing with rchis on org_id
+    (update_org_activity, 'update_org_activity'),  # update statement on organisation, pairing with rchis on org_id
+    (write_to_org, 'write_to_org'),  # insert statement into organisation, pairing with rchis on org_id
+    (sql_sic, 'sql_sic'),  # loop of statements that writes sic codes from staging into sic_codes table
+    (find_more_postcodes, 'find_more_postcodes'),  # updates rchis
+    # todo can these two functions below be put into a single statement?
+    (geolocation_update_current, 'geolocation_update_current'),  # updates geo_location from rchis
+    (geolocation_insert_excess, 'geolocation_insert_excess'),  # insert ignores into rchis
+]
+for func, err in func_list:
     try:
-        update_org_name(cursor, db)
-        logger.info('update_org_name completed')
+        func(cursor, db)
     except Exception as e:
         pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check update_org_name: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    try:
-        update_org_website(cursor, db)
-        logger.info('update_org_website completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check update_org_website: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    try:
-        update_org_activity(cursor, db)
-        logger.info('update_org_activity completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check update_org_activity: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    try:
-        write_to_org(cursor, db)
-        logger.info('write_to_org completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check write_to_org: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    # add and update sic
-    try:
-        sql_sic(cursor, db)
-        logger.info('sql_sic completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check sql_sic: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    # add and update addresses
-    try:
-        # find postcodes amongst other address columns
-        logger.info('finding more postcodes')
-        find_more_postcodes(cursor, db)
-        # produce md5 to use as unique key
-        geolocation_md5_gen(cursor, db)
-        logger.info('geolocation_md5_gen completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check geolocation_md5_gen: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-    try:
-        geolocation_update_current(cursor, db)
-        logger.info('geolocation_update_current completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check geolocation_update_current: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        # quit()
-    try:
-        geolocation_insert_excess(cursor, db)
-        logger.info('geolocation_insert_excess completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check geolocation_insert_excess: {e}'
+        pipeline_message = f'{func} {e}'
         pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
 
-    # delete organisations
-    try:
-        del_from_org(cursor, db)
-        logger.info('update_org_activity completed')
-    except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f'check del_from_org: {e}'
-        pipeline_hexcolour = '#c40000'
-        pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-        quit()
-except Exception as err:
-    pipeline_title = 'Companies House File Pipeline Failed'
-    pipeline_message = f'File Date: {ch_upload_date} - {err}'
-    pipeline_hexcolour = '#c40000'
-    pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
-    quit()
 integration_with_preprod_end = time.time()
 time_integration_with_preprod = integration_with_preprod_end - integration_with_preprod_start
 # when done, update filetracker (DEPRECATED SINCE 03/03/23??)

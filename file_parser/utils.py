@@ -8,6 +8,12 @@ from filesplit.split import Split
 
 
 def date_check(file_date: datetime.date, cursor):
+    """
+    checks for presence of specified month's file in filetracker
+    :param file_date:
+    :param cursor:
+    :return:
+    """
     cursor.execute("select * from BasicCompanyData_filetracker where MONTH(ch_upload_date) = MONTH(%s)", (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
@@ -32,6 +38,7 @@ def date_check_sic(file_date: datetime.date, cursor):
 
 def unzip_ch_file(file_name):
     filepath = f'file_downloader/files/{file_name}'
+    print(filepath)
     output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
