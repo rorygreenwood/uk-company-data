@@ -57,11 +57,8 @@ if len(fragment_list) == 1:
     try:
         ch_file, ch_upload_date = collect_companieshouse_file(firstDayOfMonth)
     except Exception as e:
-        pipeline_title = 'Companies House File Pipeline Failed'
-        pipeline_message = f"""
-        collect_companieshouse_file: {e}
-        file probably doesn't exist?
-        """
+        pipeline_title = 'Companies House File Pipeline Complete'
+        pipeline_message = 'No new File'
         pipeline_hexcolour = '#c40000'
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
