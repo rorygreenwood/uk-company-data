@@ -1,3 +1,6 @@
+"""
+this appears to be an old script. it doesn't have md5
+"""
 from locker import connect_preprod
 
 
@@ -31,19 +34,10 @@ def address_processing(cursor, db):
                     print(org_id, ad1, ad2)
         print(format_postcode)
         print('---')
-        office_type = 'HEAD OFFICE'
-        cursor.execute("""insert into geo_location
+        office_type = 'HEAD_OFFICE'
+        cursor.execute("""insert ignore into geo_location
         (organisation_id, address_1, address_2, town, county, post_code, post_code_formatted, area_location,
         address_type) VALUES (%s, %s, %ws, %s, %s, %s, %s, %s, %s)
-        on duplicate key update 
-        address_1 = %s,
-        address_2 = %s,
-        town = %s,
-        county = %s,
-        post_code = %s,
-        post_code_formatted = %s,
-        area_location = %s,
-        address_type = %s
         """, (org_id, line1, line2, posttown, county, postcode, format_postcode, county, office_type,
               line1, line2, posttown, county, postcode, format_postcode, county, office_type))
         db.commit()

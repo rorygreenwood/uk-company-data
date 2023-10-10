@@ -19,6 +19,7 @@ def add_organisation_id(cursor, db):
     :param db:
     :return:
     """
+    logger.info('add_organisation_id called')
     cursor.execute("""update raw_companies_house_input_stage
      set 
      organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
@@ -40,6 +41,7 @@ def write_to_org(cursor, db):
     :param db:
     :return:
     """
+    logger.info('calling write_to_org')
     # insert into organisation as well
     cursor.execute("""insert ignore into organisation (id, company_name,
                                  company_number,
@@ -50,7 +52,7 @@ def write_to_org(cursor, db):
                                company_name, company_number,
                                company_status,
                                'UNITED KINGDOM', CURDATE(),
-                               'Rory - CHP - write_to_org', CURDATE(), 'UK' from raw_companies_house_input_stage
+                               'CompaniesHouse_DataTransfer - write_to_org', CURDATE(), 'UK' from raw_companies_house_input_stage
                                 where CONCAT('UK', company_number) not in
                                 (select id from organisation_insert_test where country = 'UNITED KINGDOM')""")
     db.commit()
@@ -63,11 +65,12 @@ def update_org_website(cursor, db):
     :param db:
     :return:
     """
+    logger.info('update_org_website called')
     cursor.execute("""update organisation o
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
                         set 
                         o.website = rchis.URI,
-                        last_modified_by = 'Rory - CHP - update_org_website',
+                        last_modified_by = 'CompaniesHouse_DataTransfer - update_org_website',
                         last_modified_date = CURDATE()
                          where o.website is null and o.website <> ''""")
     db.commit()
@@ -80,11 +83,12 @@ def update_org_name(cursor, db):
     :param db:
     :return:
     """
+    logger.info('update_org_name_called')
     cursor.execute("""update organisation o
                         inner join raw_companies_house_input_stage rchis on o.company_number = rchis.company_number
                         set 
                         o.company_name = rchis.company_name,
-                        last_modified_by = 'Rory - CHP - update_org_name',
+                        last_modified_by = 'CompaniesHouse_DataTransfer - update_org_name',
                         last_modified_date = CURDATE()
                          where o.company_name <> rchis.company_name and o.company_number = rchis.company_number""")
     db.commit()
@@ -97,12 +101,13 @@ def update_org_activity(cursor, db):
     :param db:
     :return:
     """
+    logger.info('update_org_activity called')
     cursor.execute("""
     update organisation o
     inner join raw_companies_house_input_stage rchis
     on o.id = rchis.organisation_id
     set o.company_status = rchis.company_status,
-    last_modified_by = 'Rory - CHP - update_org_activity',
+    last_modified_by = 'CompaniesHouse_DataTransfer - update_org_activity',
     last_modified_date = CURDATE()
     where o.company_status != rchis.company_status
     """)
@@ -110,7 +115,7 @@ def update_org_activity(cursor, db):
     db.commit()
 
 
-def del_from_org(cursor, db):
+def _del_from_org(cursor, db):
     """
     iterates over several delete statements to remove records of a company from all tables linked to organisation
     and then delete the row itself.
@@ -181,10 +186,10 @@ def del_from_org(cursor, db):
                 c_name_fail_list.append((c_id, c_name, table, e))
                 pass
     for company_id, company_name, preprod_table, error_text in c_name_fail_list:
-        cursor.execute("""insert into companies_house_pipeline_failed_removals
-         (company_id, company_name, table_name, error_text) VALUES (%s, %s, %s, %s) """,
-                       company_id, company_name, preprod_table, error_text
-                       )
+        # cursor.execute("""insert into companies_house_pipeline_failed_removals
+        #  (company_id, company_name, table_name, error_text) VALUES (%s, %s, %s, %s) """,
+        #                company_id, company_name, preprod_table, error_text
+        #                )
         db.commit()
 
 
@@ -197,6 +202,7 @@ def find_more_postcodes(cursor, db):
     :param db:
     :return:
     """
+    logger.info('find_more_postcodes called')
     cursor.execute("""update raw_companies_house_input_stage
     set reg_address_postcode = REGEXP_SUBSTR(concat(reg_address_line1, ' ', reg_address_line2
     , ' ', reg_address_posttown,' ', reg_address_county), '[A-Z]{1,2}[0-9]+ +[0-9]+[A-Z]+')
@@ -234,6 +240,7 @@ def geolocation_update_current(cursor, db):
     :param db:
     :return:
     """
+    logger.info('geolocation_update_current called')
     cursor.execute("""
     update ignore geo_location gl inner join raw_companies_house_input_stage rchis on gl.organisation_id = rchis.organisation_id
             set gl.address_1 = rchis.reg_address_line1,
@@ -245,7 +252,7 @@ def geolocation_update_current(cursor, db):
             gl.post_code_formatted = LOWER(TRIM(rchis.reg_address_postcode)),
             gl.md5_key = rchis.md5_key,
             gl.date_last_modified = curdate(),
-            gl.last_modified_by = 'Rory - CHP - geolocation_update_current'
+            gl.last_modified_by = 'CompaniesHouse_DataTransfer - geolocation_update_current'
             where gl.md5_key <> rchis.md5_key and gl.organisation_id = rchis.organisation_id
             and gl.address_type = 'HEAD_OFFICE';"""
                    )
@@ -259,7 +266,8 @@ def geolocation_insert_excess(cursor, db):
     :param db:
     :return:
     """
-    cursor.execute("""insert into geo_location
+    logger.info('geolocation_insert_excess called')
+    cursor.execute("""insert ignore into geo_location
         (address_1, address_2,
          town, county,
           post_code, area_location, country, address_type,
@@ -269,7 +277,7 @@ def geolocation_insert_excess(cursor, db):
         , reg_address_posttown, reg_address_county,
          reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
           LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number),
-           md5(concat(rchis.organisation_id, reg_address_postcode)), curdate(), 'Rory - CHP - geo_location_insert'
+           md5(concat(rchis.organisation_id, reg_address_postcode)), curdate(), 'CompaniesHouse_DataTransfer - geo_location_insert'
         from raw_companies_house_input_stage rchis
         left join geo_location gl on gl.md5_key = rchis.md5_key
         where gl.md5_key is null""")
@@ -382,4 +390,30 @@ inner join sic_code sc on sc.organisation_id = o.id
 inner join isic_level_3 il3 on sc.code = il3.sic_code_1
 where iom.organisation_id is null
     """)
+    db.commit()
+
+
+def load_calculations(first_month, second_month):
+    """sql query that takes two different months and calculates the difference between them"""
+    cursor.execute("""insert ignore into companies_house_sic_code_analytics
+select t1.sic_code,
+       t1.file_date as first_month,
+       t2.file_date as second_month,
+       t1.sic_code_count as `first_month_count`,
+       t2.sic_code_count as `second_month_count`,
+       (t2.sic_code_count - t1.sic_code_count) as diff,
+       100*(t2.sic_code_count-t1.sic_code_count)/t2.sic_code_count as pct_change,
+       md5(concat(t1.sic_code, t1.file_date, t2.file_date)) as md5_str
+       from (
+select sic_code, sic_code_count, file_date from companies_house_sic_counts where month(file_date) = %s) t1
+inner join (
+select sic_code, sic_code_count, file_date from companies_house_sic_counts where month(file_date) = %s) t2
+on t1.sic_code = t2.sic_code
+order by sic_code""", (first_month, second_month))
+    db.commit()
+
+
+def insert_sic_counts(month):
+    cursor.execute("""insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
+    SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code""", (month, month))
     db.commit()
