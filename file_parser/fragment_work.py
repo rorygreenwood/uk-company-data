@@ -1,7 +1,6 @@
 import datetime
 
 import pandas as pd
-import polars as pl
 import sqlalchemy
 
 from locker import *
@@ -99,6 +98,60 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     cursordb.commit()
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
+
+
+def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
+    print(fragment)
+    cursor.execute("""truncate companies_house_sic_pool""")
+    ppdb.commit()
+    constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
+    df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1',
+                                        'SICCode.SicText_2', 'SICCode.SicText_3', 'SICCode.SicText_4'])
+    df.rename(columns=dtype_dict_comp_sic, inplace=True)
+    df['FilePath'] = fragment + 'HISTORICAL'
+    fragment_path = fragment + 'HISTORICAL'
+    df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
+              index=False)
+
+    cursor.execute("""update companies_house_sic_pool
+set
+    SicText_1 = SUBSTRING_INDEX(SicText_1, '-', 1),
+    SicText_2 = SUBSTRING_INDEX(SicText_2, '-', 1),
+    SicText_3 = SUBSTRING_INDEX(SicText_3, '-', 1),
+    SicText_4 = SUBSTRING_INDEX(SicText_4, '-', 1)""")
+    ppdb.commit()
+
+    cursor.execute("""update companies_house_sic_pool set md5_str = md5(concat(CompanyNumber, FilePath))
+    where md5_str is null and FilePath = %s
+    """, (fragment_path,))
+    ppdb.commit()
+    # todo remove text and keep regex
+    cursor.execute("""update companies_house_sic_pool set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
+    """)
+    ppdb.commit()
+    # todo add parsing to sic_count counts with a truncate
+    cursor.execute("""
+    insert into companies_house_sic_counts (sic_code, sic_code_count, file_date, md5_str)
+                        select SicText_1, count(*), Filepath,
+                        md5_str from companies_house_sic_pool
+                        group by SicText_1, Filepath
+                    union
+                        select SicText_2, count(*), Filepath,
+                        md5_str from companies_house_sic_pool
+                        group by SicText_2, Filepath
+                    union
+                        select SicText_3, count(*), Filepath,
+                        md5_str from companies_house_sic_pool
+                        group by SicText_3, Filepath
+                    union
+                        select SicText_4, count(*), Filepath,
+                        md5_str from companies_house_sic_pool
+                        group by SicText_4, Filepath
+                    on duplicate key update 
+                     companies_house_sic_counts.md5_str = companies_house_sic_counts.md5_str""")
+    ppdb.commit()
+    cursor.execute("""truncate table companies_house_sic_pool""")
+    ppdb.commit()
 
 
 def _parse_fragment(fragment, host, user, passwd, db, cursor, cursordb, company_file_table):

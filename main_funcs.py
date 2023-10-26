@@ -393,6 +393,15 @@ where iom.organisation_id is null
     db.commit()
 
 
+def sql_historical_sic(cursor, db):
+    """
+    similar to sql_sic only writing into
+    :param cursor:
+    :param db:
+    :return:
+    """
+
+
 def load_calculations(first_month, second_month):
     """sql query that takes two different months and calculates the difference between them"""
     cursor.execute("""insert ignore into companies_house_sic_code_analytics

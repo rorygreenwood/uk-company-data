@@ -43,7 +43,7 @@ if verif_check:
     quit()
 else:
     print('new file found')
-    # pipeline_messenger(title=ch_pipeline, text=f'New File Found: {firstDayOfMonth}', hexcolour=hexcolour_green)
+    pipeline_messenger(title=ch_pipeline, text=f'New File Found: {firstDayOfMonth}', hexcolour=hexcolour_green)
     # check for pre-existing files to be loaded first
     # if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
     try:
@@ -85,11 +85,11 @@ func_list = [
     (update_org_activity, 'update_org_activity'),  # update statement on organisation, pairing with rchis on org_id
     (write_to_org, 'write_to_org'),  # insert statement into organisation, pairing with rchis on org_id
     (sql_sic, 'sql_sic'),  # loop of statements that writes sic codes from staging into sic_codes table
-    # todo add sql analysis functions
     (insert_sic_counts(month=datetime.date.today().month), ''),
     load_calculations(first_month=datetime.date.today().month-1, second_month=datetime.date.today().month)
     (find_more_postcodes, 'find_more_postcodes'),  # updates rchis
-    # todo can these two functions below be put into a single statement?
+    # todo 2/10 can these two functions below be put into a single statement?
+    # todo 12/10 update already has issue with md5 duplicates that needs addressing still.
     (geolocation_update_current, 'geolocation_update_current'),  # updates geo_location from rchis
     (geolocation_insert_excess, 'geolocation_insert_excess'),  # insert ignores into rchis
 ]
@@ -103,10 +103,10 @@ for func, err in func_list:
         pipeline_messenger(title=pipeline_title, text=pipeline_message, hexcolour=pipeline_hexcolour)
         quit()
 
-#todo remove this
-ch_upload_date = firstDayOfMonth
-str_ch_file = '2023-10-04'
-fragment_number = 1
+# #todo remove this
+# ch_upload_date = firstDayOfMonth
+# str_ch_file = '2023-10-04'
+# fragment_number = 1
 
 integration_with_preprod_end = time.time()
 time_integration_with_preprod = integration_with_preprod_end - integration_with_preprod_start

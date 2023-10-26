@@ -189,8 +189,29 @@ dtype_dict_columns_input = [
     , 'number_of_employees'
 ]
 
+# columns in SQL table for sic_loading
+dtype_dict_columns_output_sic = [
+    'CompanyNumber',
+    'SicText_1',
+    'SicText_2',
+    'SicText_3',
+    'SicText_4'
+]
+
+# columns in csv for sic loading
+dtype_dict_columns_input_sic = [
+    ' CompanyNumber'
+    , 'SICCode.SicText_1'
+    , 'SICCode.SicText_2'
+    , 'SICCode.SicText_3'
+    , 'SICCode.SicText_4'
+]
+
 dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
                    range(len(dtype_dict_columns_input))}
+
+dtype_dict_comp_sic = {dtype_dict_columns_input_sic[i]: dtype_dict_columns_output_sic[i] for i in
+                       range(len(dtype_dict_columns_input_sic))}
 
 org_del_query_list = [
     """delete from organisation_filing_history where organisation_id in (select o.id from organisation o
