@@ -1,0 +1,24 @@
+schedules:
+- cron: '0 22 * * *'
+  displayName: once per day
+  branches:
+    include:
+    - master
+  always: True
+pr: none
+trigger: none
+
+variables:
+- group: hgdata-pipeline-variables
+- group: aws-credential-group
+
+pool: 'Default'
+
+steps:
+- script: pip install -r requirements.txt
+  displayName: install requirements
+- script: | 
+    cd hgdata2
+    python3 main_section1.py pipeline
+  displayName: Execute the file
+

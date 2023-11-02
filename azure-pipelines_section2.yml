@@ -1,0 +1,20 @@
+resources:
+  pipelines:
+    - pipeline: Previous Pipeline Trigger 1
+      source: CompaniesHouse-Pipeline-Section-1
+      project: Data_Engineering
+      trigger: true
+variables:
+- group: hgdata-pipeline-variables
+- group: aws-credential-group
+
+pool: 'Default'
+
+steps:
+- script: pip install -r requirements.txt
+  displayName: install requirements
+- script: |
+    cd hgdata2
+    python3 main_section2.py pipeline
+  displayName: Execute the file
+

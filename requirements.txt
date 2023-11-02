@@ -5,3 +5,6 @@ filesplit~=4.0.1
 pandas~=1.5.3
 polars~=0.18.7
 SQLAlchemy~=1.4.46
+bs4~=0.0.1
+beautifulsoup4~=4.12.2
+boto3~=1.26.52

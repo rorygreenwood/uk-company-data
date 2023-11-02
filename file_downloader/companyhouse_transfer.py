@@ -15,9 +15,9 @@ def collect_companieshouse_file(firstdateofmonth, filename):
     logger.info(f'set date as {firstdateofmonth}')
     print('calling collect_companieshouse_file')
     logger.info(f'set filename as {filename}')
-    baseurl = 'https://download.companieshouse.gov.uk/' + filename
+    baseurl = 'http://download.companieshouse.gov.uk/' + filename
     logger.info(f'sending request using url: {baseurl}')
-    req = r.get(baseurl, stream=True)
+    req = r.get(baseurl, stream=True, verify=False)
     logger.info('downloading file')
     with open('file_downloader/files/' + filename, 'wb') as fd:
         chunkcount = 0
@@ -35,7 +35,7 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     """
     print('search called')
     initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
-    r = requests.get(initial_req_url)
+    r = requests.get(initial_req_url, verify=False)
     # filename = 'BasicCompanyDataAsOneFile-' + str(firstdateofmonth) + '.zip'
     r_content = r.content
     rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
