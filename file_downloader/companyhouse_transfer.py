@@ -9,8 +9,6 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
-# https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2023-04-01.zip
-# https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2023-01-01.zip
 def collect_companieshouse_file(firstdateofmonth, filename):
     logger.info(f'set date as {firstdateofmonth}')
     logger.info('collecting ch_file')
@@ -33,7 +31,7 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     :param firstdateofmonth:
     :return: filename, firstdateofmonth
     """
-    print('search called')
+    logger.info('search called')
     initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
     r = requests.get(initial_req_url, verify=False)
     # filename = 'BasicCompanyDataAsOneFile-' + str(firstdateofmonth) + '.zip'
@@ -41,19 +39,19 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
     links = rsoup.find_all('a')
     # check links on product page for the current date string from firstdateofmonth
-    print(links)
+    logger.info(links)
     str_month = firstdateofmonth.strftime('%Y-%m')
-    print(str_month)
-
+    logger.info(str_month)
+    filename = False
     for link in links:
-        if str_month in link.text:
-            print(f'new file found: {link.text}')
-            print(link)
-            filename = link['href']
-            print(f'filename: {filename}')
-            file_link = link['href']
-            print(f'filelink: {file_link}')
-            filename, firstdateofmonth = collect_companieshouse_file(firstdateofmonth, file_link)
-            break
+        while not filename:
+            if str_month in link.text:
+                logger.info(f'new file found: {link.text}')
+                logger.info(link)
+                filename = link['href']
+                logger.info(f'filename: {filename}')
+                file_link = link['href']
+                logger.info(f'filelink: {file_link}')
+                filename, firstdateofmonth = collect_companieshouse_file(firstdateofmonth, file_link)
+                break
     return filename, firstdateofmonth
-

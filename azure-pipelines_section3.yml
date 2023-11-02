@@ -1,7 +1,7 @@
 resources:
   pipelines:
     - pipeline: Previous Pipeline Trigger 1
-      source: HGData-Importer-Section-1
+      source: companies_house_pipeline_section2
       project: Data_Engineering
       trigger: true
 variables:
@@ -13,8 +13,6 @@ pool: 'Default'
 steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
-- script: |
-    cd hgdata2
-    python3 main_section3.py pipeline
+- script: python3 main_section3.py pipeline
   displayName: Execute the file
 

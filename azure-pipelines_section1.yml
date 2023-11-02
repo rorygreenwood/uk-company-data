@@ -17,8 +17,6 @@ pool: 'Default'
 steps:
 - script: pip install -r requirements.txt
   displayName: install requirements
-- script: | 
-    cd hgdata2
-    python3 main_section1.py pipeline
+- script: python3 main_section1.py pipeline
   displayName: Execute the file
 
