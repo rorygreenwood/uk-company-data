@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO,
 # https://download.companieshouse.gov.uk/BasicCompanyDataAsOneFile-2023-01-01.zip
 def collect_companieshouse_file(firstdateofmonth, filename):
     logger.info(f'set date as {firstdateofmonth}')
-    print('calling collect_companieshouse_file')
+    logger.info('collecting ch_file')
     logger.info(f'set filename as {filename}')
     baseurl = 'http://download.companieshouse.gov.uk/' + filename
     logger.info(f'sending request using url: {baseurl}')
