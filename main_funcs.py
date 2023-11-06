@@ -426,3 +426,4 @@ def insert_sic_counts(month):
     cursor.execute("""insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
     SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code""", (month, month))
     db.commit()
+

@@ -1,16 +1,12 @@
 """take fragments from s3 bucket and load them into rchis."""
-import datetime
+import os
 import time
 
-from file_downloader.companyhouse_transfer import search_and_collect_ch_file
-from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
-from main_funcs import *
-import os
-from locker import connect_preprod
-from file_parser.utils import date_check
-from pipeline_messenger_messages import *
 import boto3
+
+from file_parser.fragment_work import parse_fragment
+from file_parser.utils import pipeline_messenger
+from main_funcs import *
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
@@ -45,6 +41,7 @@ for subkey in zipped_keys['Contents']:
         parse_fragment(f'file_downloader/files/fragments/{fragment_file_name}', host=host, user=user, passwd=passwd,
                        db=database, cursor=cursor, cursordb=db)
         os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
+        # todo remove fragment from
         et = time.time()
         final_time = et - st
         logger.info(f'parse time for this iteration: {final_time}')

@@ -3,18 +3,19 @@ download ch file, fragment it, upload fragments to s3 and upload main file to DS
 """
 
 import datetime
+import os
+import subprocess
 import time
 
-from file_downloader.companyhouse_transfer import search_and_collect_ch_file
-from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
-from main_funcs import *
-import os
-from locker import connect_preprod
-from file_parser.utils import date_check
-from pipeline_messenger_messages import *
 import boto3
-import subprocess
+
+from file_downloader.companyhouse_transfer import search_and_collect_ch_file
+from file_parser.utils import date_check
+from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
+from locker import connect_preprod
+from main_funcs import *
+from pipeline_messenger_messages import *
+
 start_time = time.time()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
