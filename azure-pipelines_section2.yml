@@ -1,8 +1,7 @@
 resources:
   pipelines:
-    - pipeline: Previous Pipeline Trigger 1
-      source: companies_house_pipeline_section1
-      project: Data_Engineering
+    - pipeline: Previous Pipeline Trigger companieshouse1
+      source: companies_house/companies_house_pipeline_section1
       trigger: true
 variables:
 - group: hgdata-pipeline-variables

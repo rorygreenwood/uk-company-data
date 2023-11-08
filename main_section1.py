@@ -11,10 +11,12 @@ import boto3
 
 from file_downloader.companyhouse_transfer import search_and_collect_ch_file
 from file_parser.utils import date_check
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
+from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
 from locker import connect_preprod
 from main_funcs import *
 from pipeline_messenger_messages import *
+global ch_file
+global verif_check
 
 start_time = time.time()
 logging.basicConfig(level=logging.INFO,
@@ -38,7 +40,6 @@ s3client = boto3.client('s3',
                         region_name='eu-west-1'
                         )
 # download file
-logger.info('downloading file')
 firstDayOfMonth = datetime.date(datetime.date.today().year,
                                 datetime.date.today().month,
                                 datetime.date.today().day)
@@ -56,8 +57,6 @@ if verif_check:
 else:
     print('new file found')
     pipeline_messenger(title=ch_pipeline, text=f'New File Found: {firstDayOfMonth}', hexcolour=hexcolour_green)
-    # check for pre-existing files to be loaded first
-    # if len(fragment_list) == 1 then only fragments.txt present, download file and begin process
     try:
         ch_file, ch_upload_date = search_and_collect_ch_file(firstDayOfMonth)
     except Exception as e:
@@ -66,12 +65,13 @@ else:
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
     unzipped_ch_file = unzip_ch_file(ch_file)
-    fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
+    fragment_file(file_name=f'file_downloader/files/{unzipped_ch_file}', output_dir='file_downloader/files/fragments/')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
     s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
     [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/")} {s3_url}')
      for fragment in fragment_list]
+
     # once uplaoded, upload the CH file to DSIL path
     response = s3client.upload_file(ch_file, s3_url, ch_file)
 

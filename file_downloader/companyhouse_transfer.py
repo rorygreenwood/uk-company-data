@@ -1,4 +1,6 @@
 import logging
+import time
+
 import bs4
 import requests
 import requests as r
@@ -39,12 +41,12 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
     links = rsoup.find_all('a')
     # check links on product page for the current date string from firstdateofmonth
-    logger.info(links)
     str_month = firstdateofmonth.strftime('%Y-%m')
     logger.info(str_month)
-    filename = False
-    for link in links:
-        while not filename:
+    filename = ''
+    while filename == '':
+        for link in links:
+            logger.info(f'link in loop: {link}')
             if str_month in link.text:
                 logger.info(f'new file found: {link.text}')
                 logger.info(link)
@@ -54,4 +56,6 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
                 logger.info(f'filelink: {file_link}')
                 filename, firstdateofmonth = collect_companieshouse_file(firstdateofmonth, file_link)
                 break
+        logger.info('filename is still none')
+        time.sleep(4)
     return filename, firstdateofmonth

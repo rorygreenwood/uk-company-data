@@ -2,9 +2,14 @@ import datetime
 import json
 import os
 import zipfile
+import logging
 
 import requests
 from filesplit.split import Split
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
 def date_check(file_date: datetime.date, cursor):
@@ -25,6 +30,13 @@ def date_check(file_date: datetime.date, cursor):
 
 
 def date_check_sic(file_date: datetime.date, cursor):
+    """
+    returns a boolean depending on whether or not the specified monthly data file is already present in the
+    sic code filetracker
+    :param file_date:
+    :param cursor:
+    :return:
+    """
     cursor.execute("select * from BasicCompanyData_filetracker_siccode_analysis where ch_upload_date = %s",
                    (file_date,))
     res = cursor.fetchall()
@@ -37,8 +49,12 @@ def date_check_sic(file_date: datetime.date, cursor):
 
 
 def unzip_ch_file(file_name):
+    """
+    unzips a given filename into the output directory specified
+    :param file_name:
+    :return:
+    """
     filepath = f'file_downloader/files/{file_name}'
-    print(filepath)
     output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
@@ -46,17 +62,18 @@ def unzip_ch_file(file_name):
     return file_name.replace('.zip', '.csv')
 
 
-def fragment_ch_file(file_name):
-    split = Split(file_name, 'file_downloader/files/fragments/')
+def fragment_file(file_name: str, output_dir: str):
+    """
+    divides a given file into the given output_dir str variable,
+    specifically fragments into lines of 49,999 with a header row
+    deletes the manifest file
+    :param output_dir:
+    :param file_name:
+    :return:
+    """
+    split = Split(file_name, output_dir)
     split.bylinecount(linecount=50000, includeheader=True)
-    os.remove('file_downloader/files/fragments/manifest')
-
-
-# for use in loading sic_historical_data:
-def fragment_ch_file_sic(file_name):
-    split = Split(file_name, 'file_downloader/files/sic_fragments/')
-    split.bylinecount(linecount=50000, includeheader=True)
-    os.remove('file_downloader/files/sic_fragments/manifest')
+    os.remove(f'{output_dir}manifest')
 
 
 def pipeline_messenger(title, text, hexcolour):
@@ -72,3 +89,4 @@ def pipeline_messenger(title, text, hexcolour):
         'Content-Type': 'application/json'
     }
     requests.request("POST", url, headers=headers, data=payload)
+
