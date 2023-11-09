@@ -12,9 +12,9 @@ import boto3
 from file_downloader.companyhouse_transfer import search_and_collect_ch_file
 from file_parser.utils import date_check
 from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
-from locker import connect_preprod
 from main_funcs import *
 from pipeline_messenger_messages import *
+
 global ch_file
 global verif_check
 
@@ -69,7 +69,7 @@ else:
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
     s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
-    [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/")} {s3_url}')
+    [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
      for fragment in fragment_list]
 
     # once uplaoded, upload the CH file to DSIL path
