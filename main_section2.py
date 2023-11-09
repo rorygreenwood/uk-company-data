@@ -12,14 +12,13 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
+# connected to preprod
 host = os.environ.get('HOST')
 user = os.environ.get('ADMINUSER')
 passwd = os.environ.get('ADMINPASS')
 database = os.environ.get('DATABASE')
-
 cursor, db = connect_preprod()
 
-schema = 'iqblade'
 bucket_name = 'iqblade-data-services-companieshouse-fragments'
 s3_client = boto3.client('s3',
                          aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
@@ -36,12 +35,10 @@ for subkey in zipped_keys['Contents']:
         fragment_file_name = subkey['Key']
         zd = str(subkey['LastModified'].date())
         s3_client.download_file(bucket_name, fragment_file_name, f'{fragment_path}\\{fragment_file_name}')
-
         st = time.time()
         parse_fragment(f'file_downloader/files/fragments/{fragment_file_name}', host=host, user=user, passwd=passwd,
                        db=database, cursor=cursor, cursordb=db)
         os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
-        # todo remove fragment from
         et = time.time()
         final_time = et - st
         logger.info(f'parse time for this iteration: {final_time}')

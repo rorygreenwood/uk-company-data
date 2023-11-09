@@ -22,10 +22,10 @@ def date_check(file_date: datetime.date, cursor):
     cursor.execute("select * from BasicCompanyData_filetracker where MONTH(ch_upload_date) = MONTH(%s)", (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
-        print('exists')
+        logger.info('exists')
         return True
     else:
-        print('does not exist')
+        logger.info('does not exist')
         return False
 
 
@@ -41,10 +41,10 @@ def date_check_sic(file_date: datetime.date, cursor):
                    (file_date,))
     res = cursor.fetchall()
     if len(res) > 0:
-        print('exists')
+        logger.info('exists')
         return True
     else:
-        print('does not exist')
+        logger.info('does not exist')
         return False
 
 
