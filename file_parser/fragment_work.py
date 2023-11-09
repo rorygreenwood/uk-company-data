@@ -1,9 +1,14 @@
 import datetime
+import logging
 
 import pandas as pd
 import sqlalchemy
 
 from locker import *
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+logger = logging.getLogger()
 
 
 # using the polars library
@@ -101,7 +106,7 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
 
 
 def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
-    print(fragment)
+    logger.info(f'parse_fragment_sic: {fragment}')
     cursor.execute("""truncate companies_house_sic_pool""")
     ppdb.commit()
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
@@ -120,18 +125,18 @@ set
     SicText_3 = SUBSTRING_INDEX(SicText_3, '-', 1),
     SicText_4 = SUBSTRING_INDEX(SicText_4, '-', 1)""")
     ppdb.commit()
-    # todo change md5 from company number to sic code
+    # change md5 from company number to sic code
     cursor.execute("""update companies_house_sic_pool
      set md5_str = md5(concat(CompanyNumber, FilePath))
     where md5_str is null and FilePath = %s
     """, (fragment_path,))
     ppdb.commit()
-    # todo remove text and keep regex
+    # remove text and keep regex
     cursor.execute("""update companies_house_sic_pool
      set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
     """)
     ppdb.commit()
-    # todo add parsing to sic_count counts with a truncate
+    # add parsing to sic_count counts with a truncate
     cursor.execute("""
     insert into companies_house_sic_counts (sic_code, sic_code_count, file_date, md5_str)
                         select SicText_1, count(*), Filepath,
@@ -174,7 +179,7 @@ def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
               index=False)
 
-    # todo change pandas work to a sql query pulling from the rchis file
+    # change pandas work to a sql query pulling from the rchis file
 
     cursor.execute("""insert into companies_house_sic_pool (CompanyNumber, SicText_1, SicText_2, SicText_3, SicText_4, FilePath, md5_str) SELECT 
     company_number, sic_text_1, sic_text_2, SICCode_SicText_3, SICCode_SicText_4, SourceFile, md5_key from raw_companies_house_input_stage

@@ -29,9 +29,9 @@ zipped_keys = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter
 fragment_path = os.path.abspath('file_downloader/files/fragments')
 fragment_loading_start = time.time()
 for subkey in zipped_keys['Contents']:
+    # check if the file has already been processed in the past, if it has it will be in this table
+    # if it is not in the table, then we can assume it has not been parsed and can continue to process it
     if subkey['Key'].endswith('.csv'):
-        # check if the file has already been processed in the past, if it has it will be in this table
-        # if it is not in the table, then we can assume it has not been parsed and can continue to process it
         fragment_file_name = subkey['Key']
         zd = str(subkey['LastModified'].date())
         s3_client.download_file(bucket_name, fragment_file_name, f'{fragment_path}\\{fragment_file_name}')
@@ -39,6 +39,7 @@ for subkey in zipped_keys['Contents']:
         parse_fragment(f'file_downloader/files/fragments/{fragment_file_name}', host=host, user=user, passwd=passwd,
                        db=database, cursor=cursor, cursordb=db)
         os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
+        s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
         et = time.time()
         final_time = et - st
         logger.info(f'parse time for this iteration: {final_time}')

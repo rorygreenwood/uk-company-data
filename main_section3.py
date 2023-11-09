@@ -20,7 +20,6 @@ find_more_postcodes(cursor, db)  # updates rchis
 geolocation_update_current(cursor, db)  # update geo_location
 geolocation_insert_excess(cursor, db)  # insert geolocation data
 parse_rchis_sic(cursor=cursor, ppdb=db)  # insert sic data for sic_code_analytics
-# todo incorporate sic_code analytics
 
 end_time = time.time()
 pipeline_time = end_time - start_time

@@ -55,7 +55,7 @@ if verif_check:
     pipeline_messenger(title=ch_pipeline_fail, text='No New File', hexcolour=hexcolour_red)
     quit()
 else:
-    print('new file found')
+    logger.info('new file found')
     pipeline_messenger(title=ch_pipeline, text=f'New File Found: {firstDayOfMonth}', hexcolour=hexcolour_green)
     try:
         ch_file, ch_upload_date = search_and_collect_ch_file(firstDayOfMonth)
