@@ -50,7 +50,7 @@ except Exception as e:
     pipeline_messenger(title=ch_pipeline_fail, text=f'Verification Fail: {e}', hexcolour=hexcolour_red)
     quit()
 
-# this conditional only tirggers if we specify a file to search for
+# this conditional only triggers if we specify a file to search for
 if verif_check:
     pipeline_messenger(title=ch_pipeline_fail, text='No New File', hexcolour=hexcolour_red)
     quit()
@@ -62,13 +62,18 @@ else:
     except Exception as e:
         pipeline_messenger(title=ch_pipeline_fail, text=f'Collection Fail: {e}', hexcolour=hexcolour_red)
         quit()
+
+    # unzip file
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
     unzipped_ch_file = unzip_ch_file(ch_file)
+
+    # fragment file into smaller files and remove original file
     fragment_file(file_name=f'file_downloader/files/{unzipped_ch_file}', output_dir='file_downloader/files/fragments/')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
+
+    # move fragments to s3 bucket
     fragment_list = os.listdir('file_downloader/files/fragments/')
-    # todo figure out why this throws a filenotfound error on azure but not locally
     s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
     [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
      for fragment in fragment_list]
