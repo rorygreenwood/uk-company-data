@@ -68,6 +68,7 @@ else:
     fragment_file(file_name=f'file_downloader/files/{unzipped_ch_file}', output_dir='file_downloader/files/fragments/')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
+    # todo figure out why this throws a filenotfound error on azure but not locally
     s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
     [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
      for fragment in fragment_list]
