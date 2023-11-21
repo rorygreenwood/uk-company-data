@@ -9,7 +9,7 @@ import time
 
 import boto3
 
-from file_downloader.companyhouse_transfer import search_and_collect_ch_file
+from companyhouse_transfer import search_and_collect_ch_file
 from file_parser.utils import date_check
 from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
 from main_funcs import *
@@ -39,6 +39,7 @@ s3client = boto3.client('s3',
                         aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
                         region_name='eu-west-1'
                         )
+
 # download file
 firstDayOfMonth = datetime.date(datetime.date.today().year,
                                 datetime.date.today().month,
@@ -67,7 +68,7 @@ else:
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
     unzipped_ch_file = unzip_ch_file(ch_file)
-
+    os.remove(f'file_downloader/files/{ch_file}')
     # fragment file into smaller files and remove original file
     fragment_file(file_name=f'file_downloader/files/{unzipped_ch_file}', output_dir='file_downloader/files/fragments/')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')

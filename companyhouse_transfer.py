@@ -11,8 +11,8 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
-def collect_companieshouse_file(firstdateofmonth, filename):
-    logger.info(f'set date as {firstdateofmonth}')
+def collect_companieshouse_file(filename):
+    # logger.info(f'set date as {firstdateofmonth}')
     logger.info('collecting ch_file')
     logger.info(f'set filename as {filename}')
     baseurl = 'http://download.companieshouse.gov.uk/' + filename
@@ -24,7 +24,7 @@ def collect_companieshouse_file(firstdateofmonth, filename):
         for chunk in req.iter_content(chunk_size=100000):
             chunkcount += 1
             fd.write(chunk)
-    return filename, firstdateofmonth
+    return filename
 
 
 def search_and_collect_ch_file(firstdateofmonth: datetime.date):
@@ -54,7 +54,7 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
                 logger.info(f'filename: {filename}')
                 file_link = link['href']
                 logger.info(f'filelink: {file_link}')
-                filename, firstdateofmonth = collect_companieshouse_file(firstdateofmonth, file_link)
+                filename = collect_companieshouse_file(file_link)
                 break
         logger.info('filename is still none')
         time.sleep(4)
