@@ -6,12 +6,25 @@ import logging
 
 import requests
 from filesplit.split import Split
+import time
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 
 
+def timer(func):
+    def wrapper(*args, **kwargs):
+        t1 = time.time()
+        var = func(*args, **kwargs)
+        t2 = time.time() - t1
+        logger.info(f'{func} took {t2} seconds')
+        return var
+
+    return wrapper
+
+
+@timer
 def date_check(file_date: datetime.date, cursor):
     """
     checks for presence of specified month's file in filetracker
@@ -29,6 +42,7 @@ def date_check(file_date: datetime.date, cursor):
         return False
 
 
+@timer
 def date_check_sic(file_date: datetime.date, cursor):
     """
     returns a boolean depending on whether or not the specified monthly data file is already present in the
@@ -48,6 +62,7 @@ def date_check_sic(file_date: datetime.date, cursor):
         return False
 
 
+@timer
 def unzip_ch_file(file_name):
     """
     unzips a given filename into the output directory specified
@@ -62,6 +77,7 @@ def unzip_ch_file(file_name):
     return file_name.replace('.zip', '.csv')
 
 
+@timer
 def fragment_file(file_name: str, output_dir: str):
     """
     divides a given file into the given output_dir str variable,
@@ -76,6 +92,7 @@ def fragment_file(file_name: str, output_dir: str):
     os.remove(f'{output_dir}manifest')
 
 
+@timer
 def pipeline_messenger(title, text, hexcolour):
     url = "https://tdworldwide.webhook.office.com/webhookb2/d5d1f4d1-2858-48a6-8156-5abf78a31f9b@7fe14ab6-8f5d-4139-84bf-cd8aed0ee6b9/IncomingWebhook/76b5bd9cd81946338da47e0349ba909d/c5995f3f-7ce7-4f13-8dba-0b4a7fc2c546"
     payload = json.dumps({
@@ -89,4 +106,3 @@ def pipeline_messenger(title, text, hexcolour):
         'Content-Type': 'application/json'
     }
     requests.request("POST", url, headers=headers, data=payload)
-

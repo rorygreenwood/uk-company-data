@@ -1,8 +1,21 @@
 import logging
 import mysql.connector
 import os
+import time
 
 
+def timer(func):
+    def wrapper(*args, **kwargs):
+        t1 = time.time()
+        var = func(*args, **kwargs)
+        t2 = time.time() - t1
+        logger.info(f'{func} took {t2} seconds')
+        return var
+
+    return wrapper
+
+
+@timer
 def connect_preprod():
     db = mysql.connector.connect(
         host=os.environ.get('HOST'),
@@ -23,7 +36,7 @@ logger = logging.getLogger()
 
 
 # COMPANIES HOUSE TABLE
-
+@timer
 def add_organisation_id(cursor, db):
     """
     adds organisation id to company in raw companies house file table,
@@ -46,7 +59,7 @@ def _add_organisation_id_retro(cursor, db):
 
 
 # ORGANISATION WORK
-
+@timer
 def write_to_org(cursor, db):
     """
     write new companies into organisation from companies house staging table
@@ -71,6 +84,7 @@ def write_to_org(cursor, db):
     db.commit()
 
 
+@timer
 def update_org_website(cursor, db):
     """
     if a company does not have a website in organisation, update with new website from companies house raw file
@@ -89,6 +103,7 @@ def update_org_website(cursor, db):
     db.commit()
 
 
+@timer
 def update_org_name(cursor, db):
     """
 
@@ -107,6 +122,7 @@ def update_org_name(cursor, db):
     db.commit()
 
 
+@timer
 def update_org_activity(cursor, db):
     """
     update companies with new activity status
@@ -206,6 +222,7 @@ def _del_from_org(cursor, db):
         db.commit()
 
 
+@timer
 def find_more_postcodes(cursor, db):
     """
         mysql query that finds companies house records without a value in their postcode column
@@ -227,7 +244,7 @@ def find_more_postcodes(cursor, db):
 
 
 # GEOLOCATION
-
+@timer
 def geolocation_md5_gen(cursor, db):
     """
     Generate md5 hash in the companies house staging table
@@ -272,6 +289,7 @@ def geolocation_update_current(cursor, db):
     db.commit()
 
 
+@timer
 def geolocation_insert_excess(cursor, db):
     """
     Bulk Insert ignore statement from staging table to geo_location
@@ -297,6 +315,7 @@ def geolocation_insert_excess(cursor, db):
     db.commit()
 
 
+@timer
 def geolocation_clean_suboffices(cursor, db):
     """
     delete sub_offices in geo_location that do not exist in current companies house file.
@@ -345,6 +364,7 @@ where rchis.md5_key is null)""")
 
 
 # SIC
+@timer
 def sql_sic(cursor, db):
     """
     insert sic_code data from staging table to sic_code table. different queries from multiple sic columns
@@ -406,15 +426,7 @@ where iom.organisation_id is null
     db.commit()
 
 
-def sql_historical_sic(cursor, db):
-    """
-    similar to sql_sic only writing into
-    :param cursor:
-    :param db:
-    :return:
-    """
-
-
+@timer
 def load_calculations(first_month, second_month):
     """sql query that takes two different months and calculates the difference between them"""
     cursor.execute("""insert ignore into companies_house_sic_code_analytics
@@ -435,6 +447,7 @@ order by sic_code""", (first_month, second_month))
     db.commit()
 
 
+@timer
 def insert_sic_counts(month):
     cursor.execute("""insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
     SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code""", (month, month))

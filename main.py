@@ -3,10 +3,9 @@ import time
 
 from companyhouse_transfer import search_and_collect_ch_file
 from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_ch_file, pipeline_messenger
+from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
 from main_funcs import *
 import os
-from locker import connect_preprod
 from file_parser.utils import date_check
 from pipeline_messenger_messages import *
 
@@ -54,7 +53,7 @@ else:
     str_ch_file = str(ch_file)
     logger.info('unzipping file')
     unzipped_ch_file = unzip_ch_file(ch_file)
-    fragment_ch_file(f'file_downloader/files/{unzipped_ch_file}')
+    fragment_file(f'file_downloader/files/{unzipped_ch_file}')
     os.remove(f'file_downloader/files/{unzipped_ch_file}')
     fragment_list = os.listdir('file_downloader/files/fragments/')
 
