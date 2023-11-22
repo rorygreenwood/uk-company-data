@@ -45,6 +45,8 @@ firstDayOfMonth = datetime.date(datetime.date.today().year,
                                 datetime.date.today().month,
                                 datetime.date.today().day)
 # verify that a new file needs to be downloaded
+# todo change to a requests that finds a zip file that matches regex for companies houes file
+# todo then check that against a filetracker, which uses columns that process a filepath through
 try:
     verif_check = date_check(file_date=firstDayOfMonth, cursor=cursor)
 except Exception as e:

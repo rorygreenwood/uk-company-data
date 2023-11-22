@@ -1,8 +1,10 @@
 import datetime
 import json
 import os
+import subprocess
 import zipfile
 import logging
+import re
 
 import requests
 from filesplit.split import Split
@@ -42,6 +44,9 @@ def date_check(file_date: datetime.date, cursor):
         return False
 
 
+
+
+
 @timer
 def date_check_sic(file_date: datetime.date, cursor):
     """
@@ -63,17 +68,19 @@ def date_check_sic(file_date: datetime.date, cursor):
 
 
 @timer
-def unzip_ch_file(file_name):
+def unzip_ch_file_s3_send(file_name, s3_url='s3://iqblade-data-services-tdsynnex-sftp/home/tdsynnex/'):
     """
-    unzips a given filename into the output directory specified
+    unzips a given filename into the output directory specified - and then sends zip file to s3 bucket
+    :param s3_url:
     :param file_name:
-    :return:
+    :return: file_name.replace('.zip', '.csv')
     """
     filepath = f'file_downloader/files/{file_name}'
     output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
-    os.remove(f'file_downloader/files/{file_name}')
+    subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')
+    # os.remove(f'file_downloader/files/{file_name}')
     return file_name.replace('.zip', '.csv')
 
 
