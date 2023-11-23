@@ -8,7 +8,7 @@ variables:
 - group: aws-credential-group
 
 pool:
-  vmImage: 'ubuntu:latest'
+  vmImage: 'ubuntu-22.04'
 
 
 steps:
