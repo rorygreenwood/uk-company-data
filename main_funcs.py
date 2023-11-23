@@ -16,8 +16,8 @@ def connect_preprod():
     logger.info(f'this is the host variable that is being put into the connector.connect variable:{host_var}')
     db = mysql.connector.connect(
         host=host_var,
-        user=os.environ.get('ADMINUSER'),
-        passwd=os.environ.get('ADMINPASS'),
+        user=os.environ.get('USER'),
+        passwd=os.environ.get('PASS'),
         database=os.environ.get('DATABASE'),
     )
 

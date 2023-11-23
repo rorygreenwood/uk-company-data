@@ -14,8 +14,8 @@ logger = logging.getLogger()
 logger.info(os.environ)
 # connected to preprod
 host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-user = os.environ.get('ADMINUSER')
-passwd = os.environ.get('ADMINPASS')
+user = os.environ.get('USER')
+passwd = os.environ.get('PASS')
 database = os.environ.get('DATABASE')
 cursor, db = connect_preprod()
 
