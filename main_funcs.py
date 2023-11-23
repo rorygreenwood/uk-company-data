@@ -9,7 +9,7 @@ from utils import timer
 @timer
 def connect_preprod():
     db = mysql.connector.connect(
-        host=os.environ.get('HOST'),
+        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
         user=os.environ.get('ADMINUSER'),
         passwd=os.environ.get('ADMINPASS'),
         database=os.environ.get('DATABASE'),
