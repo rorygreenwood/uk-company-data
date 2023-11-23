@@ -13,7 +13,7 @@ variables:
 - group: aws-credential-group
 
 pool:
-  vmImage: 'ubunutu:latest'
+  vmImage: 'ubuntu:latest'
 
 steps:
 - script: pip install -r requirements.txt
