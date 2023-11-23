@@ -31,6 +31,7 @@ fragment_loading_start = time.time()
 for subkey in zipped_keys['Contents']:
     # check if the file has already been processed in the past, if it has it will be in this table
     # if it is not in the table, then we can assume it has not been parsed and can continue to process it
+    logger.info(subkey["Key"])
     if subkey['Key'].endswith('.csv'):
         fragment_file_name = subkey['Key']
         zd = str(subkey['LastModified'].date())

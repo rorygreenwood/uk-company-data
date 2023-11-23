@@ -8,7 +8,9 @@ variables:
 - group: hgdata-pipeline-variables
 - group: aws-credential-group
 
-pool: 'Default'
+pool:
+  vmImage: 'ubunutu:latest'
+
 
 steps:
 - script: pip install -r requirements.txt
