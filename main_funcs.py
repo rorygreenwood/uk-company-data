@@ -23,8 +23,6 @@ logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
-cursor, db = connect_preprod()
-
 
 # COMPANIES HOUSE TABLE
 @timer
