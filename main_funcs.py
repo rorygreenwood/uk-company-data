@@ -5,11 +5,17 @@ import mysql.connector
 
 from utils import timer
 
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+logger = logging.getLogger()
 
-# @timer
+
+@timer
 def connect_preprod():
+    host_var = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
+    logger.info(f'this is the host variable that is being put into the connector.connect variable:'{host_var})
     db = mysql.connector.connect(
-        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
+        host=host_var,
         user=os.environ.get('ADMINUSER'),
         passwd=os.environ.get('ADMINPASS'),
         database=os.environ.get('DATABASE'),
@@ -19,9 +25,18 @@ def connect_preprod():
     return cursor, db
 
 
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
-logger = logging.getLogger()
+@timer
+def connect_preprod():
+    print
+    db = mysql.connector.connect(
+        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
+        database=os.environ.get('DATABASE'),
+    )
+
+    cursor = db.cursor()
+    return cursor, db
 
 
 # COMPANIES HOUSE TABLE
@@ -249,6 +264,7 @@ def geolocation_md5_gen(cursor, db):
     cursor.execute("""update raw_companies_house_input_stage
     set md5_key = MD5(CONCAT(organisation_id, reg_address_postcode)) where md5_key is null """)
     db.commit()
+
 
 @timer
 def geolocation_update_current(cursor, db):
