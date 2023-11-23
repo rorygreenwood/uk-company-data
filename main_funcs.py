@@ -12,12 +12,10 @@ logger = logging.getLogger()
 
 @timer
 def connect_preprod():
-    host_var = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-    logger.info(f'this is the host variable that is being put into the connector.connect variable:{host_var}')
     db = mysql.connector.connect(
-        host=host_var,
-        user=os.environ.get('adminuser'),
-        passwd=os.environ.get('adminpass'),
+        host=os.environ.get('PREPRODHOST'),
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
         database=os.environ.get('DATABASE'),
     )
 

@@ -13,9 +13,9 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger()
 logger.info(os.environ)
 # connected to preprod
-host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
-user = os.environ.get('adminuser')
-passwd = os.environ.get('adminpass')
+host = os.environ.get('PREPRODHOST')
+user = os.environ.get('ADMINUSER')
+passwd = os.environ.get('ADMINPASS')
 database = os.environ.get('DATABASE')
 logger.info(f'using {user}, {passwd} on host: {host} to connect to database {database}')
 cursor, db = connect_preprod()
