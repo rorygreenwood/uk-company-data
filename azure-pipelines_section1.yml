@@ -12,8 +12,7 @@ variables:
 - group: hgdata-pipeline-variables
 - group: aws-credential-group
 
-pool:
-  vmImage: 'Default'
+pool: 'Default'
 
 jobs:
   - job: Setup
