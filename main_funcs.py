@@ -25,20 +25,6 @@ def connect_preprod():
     return cursor, db
 
 
-@timer
-def connect_preprod():
-    print
-    db = mysql.connector.connect(
-        host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
-        user=os.environ.get('ADMINUSER'),
-        passwd=os.environ.get('ADMINPASS'),
-        database=os.environ.get('DATABASE'),
-    )
-
-    cursor = db.cursor()
-    return cursor, db
-
-
 # COMPANIES HOUSE TABLE
 @timer
 def add_organisation_id(cursor, db):
