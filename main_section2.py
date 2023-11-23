@@ -11,7 +11,7 @@ from main_funcs import connect_preprod
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
-
+logger.info(os.environ)
 # connected to preprod
 host = os.environ.get('HOST')
 user = os.environ.get('ADMINUSER')
