@@ -9,7 +9,7 @@ import boto3
 import requests
 import requests as r
 import datetime
-from file_parser.utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap
+from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap
 from main_funcs import connect_preprod
 
 logger = logging.getLogger()

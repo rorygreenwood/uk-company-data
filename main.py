@@ -2,11 +2,11 @@ import datetime
 import time
 
 from main_section1 import search_and_collect_ch_file
-from file_parser.fragment_work import parse_fragment
-from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
+from fragment_work import parse_fragment
+from utils import unzip_ch_file, fragment_file, pipeline_messenger
 from main_funcs import *
 import os
-from file_parser.utils import date_check
+from utils import date_check
 from pipeline_messenger_messages import *
 
 start_time = time.time()

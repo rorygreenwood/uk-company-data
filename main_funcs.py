@@ -3,7 +3,7 @@ import os
 
 import mysql.connector
 
-from file_parser.utils import timer
+from utils import timer
 
 
 @timer

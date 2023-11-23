@@ -1,7 +1,7 @@
 import datetime
 
-from file_parser.fragment_work import parse_rchis_sic
-from file_parser.utils import pipeline_message_wrap, timer
+from fragment_work import parse_rchis_sic
+from utils import pipeline_message_wrap
 from main_funcs import *
 
 previous_month = datetime.datetime.now() - datetime.timedelta(days=30)

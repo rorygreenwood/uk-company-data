@@ -3,15 +3,14 @@ download ch file, fragment it, upload fragments to s3 and upload main file to DS
 """
 
 import datetime
-import os
 import subprocess
 import time
 
 import boto3
 
 from main_section1 import search_and_collect_ch_file
-from file_parser.utils import date_check
-from file_parser.utils import unzip_ch_file_s3_send, fragment_file, pipeline_messenger
+from utils import date_check
+from utils import unzip_ch_file_s3_send, fragment_file, pipeline_messenger
 from main_funcs import *
 from pipeline_messenger_messages import *
 

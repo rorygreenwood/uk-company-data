@@ -2,8 +2,8 @@
 
 import boto3
 
-from file_parser.fragment_work import parse_fragment
-from file_parser.utils import pipeline_message_wrap, timer
+from fragment_work import parse_fragment
+from utils import pipeline_message_wrap, timer
 import os
 import logging
 from main_funcs import connect_preprod
