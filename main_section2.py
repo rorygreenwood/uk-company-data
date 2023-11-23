@@ -17,6 +17,7 @@ host = 'preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com'
 user = os.environ.get('USER')
 passwd = os.environ.get('PASS')
 database = os.environ.get('DATABASE')
+logger.info(f'using {user}, {passwd} on host: {host} to connect to database {database}')
 cursor, db = connect_preprod()
 
 bucket_name = 'iqblade-data-services-companieshouse-fragments'
