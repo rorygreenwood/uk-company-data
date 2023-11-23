@@ -9,7 +9,7 @@ import boto3
 import requests
 import requests as r
 import datetime
-from file_parser.utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_messenger
+from file_parser.utils import timer, unzip_ch_file_s3_send, fragment_file
 from main_funcs import connect_preprod
 
 logger = logging.getLogger()
@@ -67,11 +67,10 @@ def file_check_regex(cursor, db):
         # if it already has been processed, the script ends.
         # if not, download the file, fragment it, send the original file to the sftp and the fragments to the s3 bucket.
         if len(filecheck) != 0:
-            print(filecheck[0])
-            print('FOUND')
             month_re = re.findall(string=filecheck[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
-            print(month_re[0])
-            cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is null""",
+            print('monthcheck: ', month_re[0])
+            print('filecheck: ', filecheck[0])
+            cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
                            (filecheck[0],))
             res = cursor.fetchall()
             print(res)
@@ -136,5 +135,6 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
 
 
 if __name__ == '__main__':
+    print(os.environ)
     cursor, db = connect_preprod()
     file_check_regex(cursor, db)
