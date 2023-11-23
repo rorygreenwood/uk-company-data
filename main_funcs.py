@@ -416,7 +416,7 @@ where iom.organisation_id is null
 
 
 @timer
-def load_calculations(first_month, second_month):
+def load_calculations(first_month, second_month, cursor, db):
     """sql query that takes two different months and calculates the difference between them"""
     cursor.execute("""insert ignore into companies_house_sic_code_analytics
 select t1.sic_code,
@@ -437,7 +437,7 @@ order by sic_code""", (first_month, second_month))
 
 
 @timer
-def insert_sic_counts(month):
+def insert_sic_counts(month, cursor, db):
     cursor.execute("""insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
     SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code""", (month, month))
     db.commit()
