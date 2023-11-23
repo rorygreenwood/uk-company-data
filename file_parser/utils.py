@@ -5,6 +5,7 @@ import subprocess
 import zipfile
 import logging
 import re
+import traceback
 
 import requests
 from filesplit.split import Split
@@ -20,10 +21,36 @@ def timer(func):
         t1 = time.time()
         var = func(*args, **kwargs)
         t2 = time.time() - t1
-        logger.info(f'{func} took {t2} seconds')
+        logger.info(f'{func.__name__} took {t2} seconds')
         return var
 
     return wrapper
+
+
+def pipeline_messenger(title, text, hexcolour):
+    url = "https://tdworldwide.webhook.office.com/webhookb2/d5d1f4d1-2858-48a6-8156-5abf78a31f9b@7fe14ab6-8f5d-4139-84bf-cd8aed0ee6b9/IncomingWebhook/76b5bd9cd81946338da47e0349ba909d/c5995f3f-7ce7-4f13-8dba-0b4a7fc2c546"
+    payload = json.dumps({
+        "@type": "MessageCard",
+        "themeColor": hexcolour,
+        "title": title,
+        "text": text,
+        "markdown": True
+    })
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    requests.request("POST", url, headers=headers, data=payload)
+
+
+def pipeline_message_wrap(func):
+    def wrapper(*args, **kwargs):
+        try:
+            var = func(*args, **kwargs)
+            pipeline_messenger(title=f'{func.__name__} has passed', text=str(var), hexcolour='#00c400')
+        except Exception as e:
+            pipeline_messenger(title=f'{func.__name__} has failed', text=str(e), hexcolour='#c40000')
+
+    return wrapper()
 
 
 @timer
@@ -42,9 +69,6 @@ def date_check(file_date: datetime.date, cursor):
     else:
         logger.info('does not exist')
         return False
-
-
-
 
 
 @timer
@@ -97,19 +121,3 @@ def fragment_file(file_name: str, output_dir: str):
     split = Split(file_name, output_dir)
     split.bylinecount(linecount=50000, includeheader=True)
     os.remove(f'{output_dir}manifest')
-
-
-@timer
-def pipeline_messenger(title, text, hexcolour):
-    url = "https://tdworldwide.webhook.office.com/webhookb2/d5d1f4d1-2858-48a6-8156-5abf78a31f9b@7fe14ab6-8f5d-4139-84bf-cd8aed0ee6b9/IncomingWebhook/76b5bd9cd81946338da47e0349ba909d/c5995f3f-7ce7-4f13-8dba-0b4a7fc2c546"
-    payload = json.dumps({
-        "@type": "MessageCard",
-        "themeColor": hexcolour,
-        "title": title,
-        "text": text,
-        "markdown": True
-    })
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    requests.request("POST", url, headers=headers, data=payload)

@@ -5,14 +5,14 @@ import pandas as pd
 import sqlalchemy
 
 from locker import *
+from utils import timer
 
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
 
 
-# using the polars library
-# takes a fragment and transforms the csv before writing to the staging table
+@timer
 def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor, cursordb):
     """
     takes a filepath of a fragment and preprod credentials
@@ -105,7 +105,8 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     cursordb.commit()
 
 
-def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
+@timer
+def _parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     logger.info(f'parse_fragment_sic: {fragment}')
     cursor.execute("""truncate companies_house_sic_pool""")
     ppdb.commit()
@@ -161,6 +162,7 @@ set
     ppdb.commit()
 
 
+@timer
 def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     """
     rewrite into new stages
@@ -245,6 +247,7 @@ select sic_code, sum(sic_count), FilePath from (select SicText_1 as sic_code, co
     cursor.execute("""truncate table companies_house_sic_code_staging_1""")
 
 
+@timer
 def parse_rchis_sic(cursor, ppdb):
     cursor.execute("""insert into companies_house_sic_pool (CompanyNumber, SicText_1, SicText_2, SicText_3, SicText_4, FilePath, md5_str) SELECT 
         company_number, sic_text_1, sic_text_2, SICCode_SicText_3, SICCode_SicText_4, SourceFile, md5_key from raw_companies_house_input_stage
@@ -328,6 +331,7 @@ def _parse_fragment(fragment, host, user, passwd, db, cursor, cursordb, company_
     cursordb.commit()
 
 
+@timer
 def write_to_organisation(cursor, db):
     cursor.execute("""insert into organisation (id, company_name, company_number, company_status, country, date_formed, last_modified_by )
 select rchis.organisation_id, rchis.company_name, rchis.company_number, rchis.company_status, 'United Kingdom', rchis.IncorporationDate, 'Rory' from raw_companies_house_input_stage rchis

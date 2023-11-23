@@ -1,7 +1,7 @@
 import datetime
 import time
 
-from companyhouse_transfer import search_and_collect_ch_file
+from main_section1 import search_and_collect_ch_file
 from file_parser.fragment_work import parse_fragment
 from file_parser.utils import unzip_ch_file, fragment_file, pipeline_messenger
 from main_funcs import *

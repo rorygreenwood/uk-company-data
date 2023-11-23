@@ -17,6 +17,7 @@ steps:
   displayName: install requirements
 - script: python3 main_section3.py pipeline
   displayName: Execute the file
+# don't think we need this DeleteFiles@1, as this section only performs sql queries and such, no files are made.
 - task: DeleteFiles@1
   displayName: 'File Cleanup - removing all .zip and .csv files'
   inputs:

@@ -1,18 +1,9 @@
 import logging
-import mysql.connector
 import os
-import time
 
+import mysql.connector
 
-def timer(func):
-    def wrapper(*args, **kwargs):
-        t1 = time.time()
-        var = func(*args, **kwargs)
-        t2 = time.time() - t1
-        logger.info(f'{func} took {t2} seconds')
-        return var
-
-    return wrapper
+from file_parser.utils import timer
 
 
 @timer
@@ -261,7 +252,7 @@ def geolocation_md5_gen(cursor, db):
     set md5_key = MD5(CONCAT(organisation_id, reg_address_postcode)) where md5_key is null """)
     db.commit()
 
-
+@timer
 def geolocation_update_current(cursor, db):
     """
     MySQL query to update existing records in geo_location, some companies will have changed there head office
