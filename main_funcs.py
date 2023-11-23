@@ -6,7 +6,7 @@ import mysql.connector
 from utils import timer
 
 
-@timer
+# @timer
 def connect_preprod():
     db = mysql.connector.connect(
         host='preprod.cqzf0yke9t3u.eu-west-1.rds.amazonaws.com',
