@@ -49,8 +49,7 @@ def pipeline_message_wrap(func):
             pipeline_messenger(title=f'{func.__name__} has passed', text=str(var), hexcolour='#00c400')
         except Exception as e:
             pipeline_messenger(title=f'{func.__name__} has failed on {str(e)}', text=str(traceback.format_exc()), hexcolour='#c40000')
-
-    return wrapper()
+    return wrapper
 
 
 @timer

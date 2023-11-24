@@ -59,8 +59,9 @@ def file_check_regex(cursor, db):
     r_content = r.content
     rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
     links = rsoup.find_all('a')
+    logger.info(links)
     for i in links:
-        # print(i['href'])
+        # logger.info(i['href'])
         filecheck = re.findall(string=i['href'], pattern=chfile_re)
         # when checked, find out how if file is in filetracker
         # if the re from filecheck returns a result, it's length is larger than 1 and we can assume a file has been found.
@@ -69,16 +70,16 @@ def file_check_regex(cursor, db):
         # if not, download the file, fragment it, send the original file to the sftp and the fragments to the s3 bucket.
         if len(filecheck) != 0:
             month_re = re.findall(string=filecheck[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
-            print('monthcheck: ', month_re[0])
-            print('filecheck: ', filecheck[0])
+            logger.info(f'monthcheck: {month_re[0]}')
+            logger.info(f'filecheck: {filecheck[0]}' )
             cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
                            (filecheck[0],))
             res = cursor.fetchall()
-            print(res)
+            logger.info(res)
             # if length of results is zero, we assume the file hasn't been downloaded
             if len(res) == 0:
                 # download file
-                print('file found to download')
+                logger.info('file found to download')
                 file_to_dl = filecheck[0]
                 # collect_companieshouse_file(filename=file_to_dl)
                 # unzip file and send .zip to s3
@@ -99,7 +100,7 @@ def file_check_regex(cursor, db):
             else:
                 # ignore
                 pass
-
+    logger.info('function complete')
 
 @timer
 def search_and_collect_ch_file(firstdateofmonth: datetime.date):
@@ -133,10 +134,10 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
                 break
         logger.info('filename is still none')
         time.sleep(4)
-    return filename, firstdateofmonth
+    # return filename, firstdateofmonth
 
 
 if __name__ == '__main__':
-    print(os.environ)
+    logger.info(os.environ)
     cursor, db = connect_preprod()
     file_check_regex(cursor, db)
