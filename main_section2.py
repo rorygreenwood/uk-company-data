@@ -26,21 +26,20 @@ s3_client = boto3.client('s3',
                          aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
                          region_name='eu-west-1'
                          )
-zipped_keys = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
-fragment_path = os.path.abspath('file_downloader/files/fragments')
+list_of_s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
+path_of_fragments = os.path.abspath('file_downloader/files/fragments')
 
 
 @pipeline_message_wrap
 @timer
 def process_section2():
-    for subkey in zipped_keys['Contents']:
+    for object in list_of_s3_objects['Contents']:
         # check if the file has already been processed in the past, if it has it will be in this table
         # if it is not in the table, then we can assume it has not been parsed and can continue to process it
-        logger.info(subkey["Key"])
-        if subkey['Key'].endswith('.csv'):
-            fragment_file_name = subkey['Key']
-            # zd = str(subkey['LastModified'].date())
-            s3_client.download_file(bucket_name, fragment_file_name, f'{fragment_path}\\{fragment_file_name}')
+        logger.info(object["Key"])
+        if object['Key'].endswith('.csv'):
+            fragment_file_name = object['Key']
+            s3_client.download_file(bucket_name, fragment_file_name, f'{path_of_fragments}\\{fragment_file_name}')
             parse_fragment(f'file_downloader/files/fragments/{fragment_file_name}', host=host, user=user, passwd=passwd,
                            db=database, cursor=cursor, cursordb=db)
             os.remove(f'file_downloader/files/fragments/{fragment_file_name}')

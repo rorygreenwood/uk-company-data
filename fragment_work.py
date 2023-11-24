@@ -30,7 +30,7 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, encoding='utf-8', low_memory=False)
     # transform
-    df.rename(columns=dtype_dict_comp, inplace=True)
+    df.rename(columns=companies_house_conversion_dict, inplace=True)
     df['SourceFile'] = fragment
     df['Date_of_insert'] = datetime.datetime.today()
     df['number_of_employees'] = None
@@ -113,7 +113,7 @@ def _parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1',
                                         'SICCode.SicText_2', 'SICCode.SicText_3', 'SICCode.SicText_4'])
-    df.rename(columns=dtype_dict_comp_sic, inplace=True)
+    df.rename(columns=sic_code_conversion_dict, inplace=True)
     df['FilePath'] = fragment + 'HISTORICAL'
     fragment_path = fragment + 'HISTORICAL'
     df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
@@ -175,7 +175,7 @@ def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
                                         'SICCode.SicText_4'])
-    df.rename(columns=dtype_dict_comp_sic, inplace=True)
+    df.rename(columns=companies_house_conversion_dict, inplace=True)
     df['FilePath'] = fragment + 'HISTORICAL'
     fragment_path = fragment + 'HISTORICAL'
     df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
@@ -317,7 +317,7 @@ def _parse_fragment(fragment, host, user, passwd, db, cursor, cursordb, company_
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     dbEngine = sqlalchemy.create_engine(constring)
 
-    df = pd.read_csv(fragment, encoding='utf-8', dtype=dtype_dict, low_memory=False,
+    df = pd.read_csv(fragment, encoding='utf-8', dtype=companies_house_file_data_types, low_memory=False,
                      # usecols=['company_number', 'company_name', 'sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4']
                      )
     # df.rename(columns=dtype_dict_comp, inplace=True)

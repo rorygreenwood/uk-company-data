@@ -1,7 +1,7 @@
 import mysql.connector
 import os
 
-dtype_dict = {
+companies_house_file_data_types = {
     'company_name': str,
     'company_number': str,
     'RegAddress_CareOf': str,
@@ -65,7 +65,7 @@ dtype_dict = {
 }
 
 # columns in SQL table
-dtype_dict_columns_output = [
+companies_house_file_table_columns = [
     'company_name',
     'company_number',
     'RegAddress_CareOf',
@@ -127,7 +127,7 @@ dtype_dict_columns_output = [
     'number_of_employees']
 
 # columns in csv
-dtype_dict_columns_input = [
+companies_house_file_csv_columns = [
     'CompanyName'
     , ' CompanyNumber'
     , 'RegAddress.CareOf'
@@ -190,7 +190,7 @@ dtype_dict_columns_input = [
 ]
 
 # columns in SQL table for sic_loading
-dtype_dict_columns_output_sic = [
+sic_code_table_columns = [
     'CompanyNumber',
     'SicText_1',
     'SicText_2',
@@ -199,7 +199,7 @@ dtype_dict_columns_output_sic = [
 ]
 
 # columns in csv for sic loading
-dtype_dict_columns_input_sic = [
+sic_code_csv_columns = [
     ' CompanyNumber'
     , 'SICCode.SicText_1'
     , 'SICCode.SicText_2'
@@ -207,11 +207,11 @@ dtype_dict_columns_input_sic = [
     , 'SICCode.SicText_4'
 ]
 
-dtype_dict_comp = {dtype_dict_columns_input[i]: dtype_dict_columns_output[i] for i in
-                   range(len(dtype_dict_columns_input))}
+companies_house_conversion_dict = {companies_house_file_csv_columns[i]: companies_house_file_table_columns[i] for i in
+                   range(len(companies_house_file_csv_columns))}
 
-dtype_dict_comp_sic = {dtype_dict_columns_input_sic[i]: dtype_dict_columns_output_sic[i] for i in
-                       range(len(dtype_dict_columns_input_sic))}
+sic_code_conversion_dict = {sic_code_csv_columns[i]: sic_code_table_columns[i] for i in
+                       range(len(sic_code_csv_columns))}
 
 org_del_query_list = [
     """delete from organisation_filing_history where organisation_id in (select o.id from organisation o

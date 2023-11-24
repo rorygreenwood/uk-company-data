@@ -354,7 +354,7 @@ where rchis.md5_key is null)""")
 
 # SIC
 @timer
-def sql_sic(cursor, db):
+def sic_code_db_insert(cursor, db):
     """
     insert sic_code data from staging table to sic_code table. different queries from multiple sic columns
     :param cursor:
@@ -418,7 +418,7 @@ where iom.organisation_id is null
 @timer
 def load_calculations(first_month, second_month, cursor, db):
     """sql query that takes two different months and calculates the difference between them"""
-    cursor.execute("""insert ignore into companies_house_sic_code_analytics
+    cursor.execute("""insert ignore into companies_house_sic_code_analytics (sic_code, first_month, second_month, first_month_count, second_month_count, diff, pct_change, md5_str) 
 select t1.sic_code,
        t1.file_date as first_month,
        t2.file_date as second_month,

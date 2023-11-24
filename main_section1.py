@@ -38,12 +38,12 @@ def collect_companieshouse_file(filename):
 @timer
 def send_to_s3(filename, s3_url='s3://iqblade-data-services-companieshouse-fragments/'):
     """sends a file to a given s3 bucket, default is iqblade-td"""
-    s3client = boto3.client('s3',
+    s3_client = boto3.client('s3',
                             aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
                             aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
                             region_name='eu-west-1'
                             )
-    s3client.upload_file(filename, s3_url, filename)
+    s3_client.upload_file(filename, s3_url, filename)
 
 
 @pipeline_message_wrap
@@ -57,50 +57,51 @@ def file_check_regex(cursor, db):
     initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
     r = requests.get(initial_req_url, verify=False)
     r_content = r.content
-    rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
-    links = rsoup.find_all('a')
+    request_content_soup = bs4.BeautifulSoup(r_content, 'html.parser')
+    links = request_content_soup.find_all('a')
     logger.info(links)
     for i in links:
         # logger.info(i['href'])
-        filecheck = re.findall(string=i['href'], pattern=chfile_re)
+        file_str_match = re.findall(string=i['href'], pattern=chfile_re)
         # when checked, find out how if file is in filetracker
-        # if the re from filecheck returns a result, it's length is larger than 1 and we can assume a file has been found.
+        # if the re from file_str_match returns a resultult, it's length is larger than 1 and we can assume a file has been found.
         # this filename needs to be checked against the companies house filetracker to see if it has already been processed
         # if it already has been processed, the script ends.
         # if not, download the file, fragment it, send the original file to the sftp and the fragments to the s3 bucket.
-        if len(filecheck) != 0:
-            month_re = re.findall(string=filecheck[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        if len(file_str_match) != 0:
+            month_re = re.findall(string=file_str_match[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
             logger.info(f'monthcheck: {month_re[0]}')
-            logger.info(f'filecheck: {filecheck[0]}' )
+            logger.info(f'file_str_match: {file_str_match[0]}')
             cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
-                           (filecheck[0],))
-            res = cursor.fetchall()
-            logger.info(res)
-            # if length of results is zero, we assume the file hasn't been downloaded
-            if len(res) == 0:
+                           (file_str_match[0],))
+            result = cursor.fetchall()
+            logger.info(result)
+            # if length of resultults is zero, we assume the file hasn't been downloaded
+            if len(result) == 0:
                 # download file
                 logger.info('file found to download')
-                file_to_dl = filecheck[0]
-                # collect_companieshouse_file(filename=file_to_dl)
+                file_to_download = file_str_match[0]
+                # collect_companieshouse_file(filename=file_to_download)
                 # unzip file and send .zip to s3
-                unzipped_file = unzip_ch_file_s3_send(f'{file_to_dl}')
+                unzipped_file = unzip_ch_file_s3_send(f'{file_to_download}')
                 # fragment file
                 fragment_file(file_name=f'file_downloader/files/{unzipped_file}',
                               output_dir='file_downloader/files/fragments/')
                 # move fragments to s3 bucket
-                fragment_list = os.listdir('file_downloader/files/fragments/')
+                list_of_fragments = os.listdir('file_downloader/files/fragments/')
                 s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
-                 for fragment in fragment_list]
+                 for fragment in list_of_fragments]
 
                 # once processes
                 cursor.execute("""insert into companies_house_filetracker (filename, section1) VALUES (%s, %s)""",
-                               (file_to_dl, datetime.date.today()))
+                               (file_to_download, datetime.date.today()))
                 db.commit()
             else:
                 # ignore
                 pass
     logger.info('function complete')
+
 
 @timer
 def search_and_collect_ch_file(firstdateofmonth: datetime.date):
@@ -111,11 +112,11 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     """
     logger.info('search called')
     initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
-    r = requests.get(initial_req_url, verify=False)
+    request = requests.get(initial_req_url, verify=False)
     # filename = 'BasicCompanyDataAsOneFile-' + str(firstdateofmonth) + '.zip'
-    r_content = r.content
-    rsoup = bs4.BeautifulSoup(r_content, 'html.parser')
-    links = rsoup.find_all('a')
+    request_content = request.content
+    request_content_soup = bs4.BeautifulSoup(request_content, 'html.parser')
+    links = request_content_soup.find_all('a')
     # check links on product page for the current date string from firstdateofmonth
     str_month = firstdateofmonth.strftime('%Y-%m')
     logger.info(str_month)
