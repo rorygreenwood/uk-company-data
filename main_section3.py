@@ -25,4 +25,5 @@ def process_section3(cursor, db):
 
 
 if __name__ == '__main__':
-    process_section3()
+    cursor, db = connect_preprod()
+    process_section3(cursor, db)
