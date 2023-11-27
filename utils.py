@@ -1,15 +1,14 @@
 import datetime
 import json
+import logging
 import os
 import subprocess
-import zipfile
-import logging
-import re
+import time
 import traceback
+import zipfile
 
 import requests
 from filesplit.split import Split
-import time
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
