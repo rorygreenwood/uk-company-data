@@ -11,13 +11,12 @@ from main_funcs import connect_preprod
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
-logger.info(os.environ)
+
 # connected to preprod
 host = os.environ.get('PREPRODHOST')
 user = os.environ.get('ADMINUSER')
 passwd = os.environ.get('ADMINPASS')
 database = os.environ.get('DATABASE')
-logger.info(f'using {user}, {passwd} on host: {host} to connect to database {database}')
 cursor, db = connect_preprod()
 
 bucket_name = 'iqblade-data-services-companieshouse-fragments'
@@ -39,7 +38,9 @@ def process_section2():
         if s3_object['Key'].endswith('.csv'):
             fragment_file_name = s3_object['Key']
             s3_client.download_file(bucket_name, fragment_file_name, f'file_downloader/files/fragments\\{fragment_file_name}')
-            parse_fragment(f'file_downloader/files/fragments/{fragment_file_name}', host=host, user=user, passwd=passwd,
+            logger.info('parsing ')
+            fragments_abspath = os.path.abspath('file_downloader/files/fragments')
+            parse_fragment(f'{fragments_abspath}/{fragment_file_name}', host=host, user=user, passwd=passwd,
                            db=database, cursor=cursor, cursordb=db)
             os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
             s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
