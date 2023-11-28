@@ -16,8 +16,8 @@ def process_section3(cursor, db):
     update_org_activity(cursor, db)  # update statement on organisation, pairing with rchis on org_id
     write_to_org(cursor, db)  # insert statement into organisation, pairing with rchis on org_id
     sic_code_db_insert(cursor, db)  # loop of statements that writes sic codes from staging into sic_codes table
-    insert_sic_counts(month=datetime.date.today().month)
-    load_calculations(first_month=previous_month.month, second_month=datetime.date.today().month)
+    insert_sic_counts(month=datetime.date.today().month, cursor=cursor, db=db)
+    load_calculations(first_month=previous_month.month, second_month=datetime.date.today().month, cursor=cursor, db=db)
     find_more_postcodes(cursor, db)  # updates rchis
     geolocation_update_current(cursor, db)  # update geo_location
     geolocation_insert_excess(cursor, db)  # insert geolocation data
