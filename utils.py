@@ -44,8 +44,8 @@ def pipeline_messenger(title, text, hexcolour):
 def pipeline_message_wrap(func):
     def wrapper(*args, **kwargs):
         try:
-            var = func(*args, **kwargs)
-            pipeline_messenger(title=f'{__file__}/{func.__name__} has passed', text=str(var), hexcolour='#00c400')
+            func(*args, **kwargs)
+            pipeline_messenger(title=f'{__file__}/{func.__name__} has passed', text='test', hexcolour='#00c400')
         except Exception as e:
             pipeline_messenger(title=f'{__file__}/{func.__name__} has failed on {str(e)}', text=str(traceback.format_exc()), hexcolour='#c40000')
     return wrapper

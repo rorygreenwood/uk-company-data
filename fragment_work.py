@@ -1,5 +1,6 @@
 import datetime
 import logging
+import time
 
 import pandas as pd
 import sqlalchemy
@@ -37,8 +38,11 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     df['phone_number'] = ''
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
+    df_to_sql_t1 = time.time()
     df.to_sql(name='raw_companies_house_input_stage_df', con=constring, if_exists='append',
               index=False)
+    df_to_sql_t2 = time.time()
+    logger.info(f'time for df_to_sql: {df_to_sql_t2 - df_to_sql_t1}')
     cursor.execute("""insert into raw_companies_house_input_stage select * from raw_companies_house_input_stage_df
     on duplicate key update
     raw_companies_house_input_stage.company_name = raw_companies_house_input_stage_df.company_name,
