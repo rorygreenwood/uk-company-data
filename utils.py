@@ -74,27 +74,32 @@ sys.excepthook = handle_exception
 
 def pipeline_message_wrap(func):
     def pipeline_message_wrapper(*args, **kwargs):
+        # define the azure variables here in a try/except, if it fails then we assume it has been run locally
+        try:
+            azure_pipeline_name = os.environ.get('BUILD_DEFINITIONNAME')
+        except Exception:
+            azure_pipeline_name = 'localhost'
         try:
             __mycode = False
             function_name = func.__name__
             script_name = os.path.basename(__file__)
-            logger.info(f'starting func {func.__name__}')
+            logger.info('starting func')
             start_time = time.time()
-            func(*args, **kwargs)
+            result = func(*args, **kwargs)
             print(func)
             logger.info('sending message')
             end_time = time.time()
             execution_time = end_time - start_time
-            logger.info(f"Function: '{function_name}' in script '{script_name}' took {execution_time} seconds")
-            pipeline_messenger(title=f'{function_name} as in {script_name} has passed!',
+            logger.info(f"Function: '{function_name}' in script '{script_name}' of pipeline '{azure_pipeline_name}' took {execution_time} seconds")
+            pipeline_messenger(title=f'{function_name} in {script_name} of project {azure_pipeline_name} has passed!',
                                text=str(f'process took {execution_time} seconds'),
                                hexcolour_value='pass')
             print('this is a test')
         except Exception:
-            # result = None
+            result = None
             pipeline_messenger(title=f'{func.__name__} in {__file__} has failed', text=str(traceback.format_exc()),
                                hexcolour_value='fail')
-        # return result
+        return result
 
     return pipeline_message_wrapper
 
