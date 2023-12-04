@@ -78,7 +78,7 @@ def pipeline_message_wrap(func):
             __mycode = False
             function_name = func.__name__
             script_name = os.path.basename(__file__)
-            logger.info('starting func')
+            logger.info(f'starting func {func.__name__}')
             start_time = time.time()
             func(*args, **kwargs)
             print(func)
