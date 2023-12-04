@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import subprocess
+import sys
 import time
 import traceback
 import zipfile
@@ -26,11 +27,16 @@ def timer(func):
     return wrapper
 
 
-def pipeline_messenger(title, text, hexcolour):
+def pipeline_messenger(title, text, hexcolour_value):
+    messenger_colours = {
+        'pass': '#00c400',
+        'fail': '#c40000',
+        'notification': '#0000c4'
+    }
     url = "https://tdworldwide.webhook.office.com/webhookb2/d5d1f4d1-2858-48a6-8156-5abf78a31f9b@7fe14ab6-8f5d-4139-84bf-cd8aed0ee6b9/IncomingWebhook/76b5bd9cd81946338da47e0349ba909d/c5995f3f-7ce7-4f13-8dba-0b4a7fc2c546"
     payload = json.dumps({
         "@type": "MessageCard",
-        "themeColor": hexcolour,
+        "themeColor": messenger_colours[hexcolour_value],
         "title": title,
         "text": text,
         "markdown": True
@@ -41,14 +47,56 @@ def pipeline_messenger(title, text, hexcolour):
     requests.request("POST", url, headers=headers, data=payload)
 
 
+def handle_exception(exc_type, exc_info, tb):
+    import traceback
+    length = mycode_traceback_levels(tb)
+    logger.info(''.join(traceback.format_exception(exc_type, exc_info, tb, length)))
+
+
+def is_mycode(tb):
+    # returns True if the top frame is part of my code.
+    test_globals = tb.tb_frame.f_globals
+    return '__mycode' in test_globals
+
+
+def mycode_traceback_levels(tb):
+    # counts how many frames are part of my code.
+    length = 0
+    while tb and is_mycode(tb):
+        length += 1
+        tb = tb.tb_next
+    return length
+
+
+__mycode = True
+sys.excepthook = handle_exception
+
+
 def pipeline_message_wrap(func):
-    def wrapper(*args, **kwargs):
+    def pipeline_message_wrapper(*args, **kwargs):
         try:
+            __mycode = False
+            function_name = func.__name__
+            script_name = os.path.basename(__file__)
+            logger.info('starting func')
+            start_time = time.time()
             func(*args, **kwargs)
-            pipeline_messenger(title=f'{__file__}/{func.__name__} has passed', text='test', hexcolour='#00c400')
-        except Exception as e:
-            pipeline_messenger(title=f'{__file__}/{func.__name__} has failed on {str(e)}', text=str(traceback.format_exc()), hexcolour='#c40000')
-    return wrapper
+            print(func)
+            logger.info('sending message')
+            end_time = time.time()
+            execution_time = end_time - start_time
+            logger.info(f"Function: '{function_name}' in script '{script_name}' took {execution_time} seconds")
+            pipeline_messenger(title=f'{function_name} as in {script_name} has passed!',
+                               text=str(f'process took {execution_time} seconds'),
+                               hexcolour_value='pass')
+            print('this is a test')
+        except Exception:
+            # result = None
+            pipeline_messenger(title=f'{func.__name__} in {__file__} has failed', text=str(traceback.format_exc()),
+                               hexcolour_value='fail')
+        # return result
+
+    return pipeline_message_wrapper
 
 
 @timer

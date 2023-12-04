@@ -1,9 +1,9 @@
 """take fragments from s3 bucket and load them into rchis."""
-
+import sys
 import boto3
 
 from fragment_work import parse_fragment
-from utils import pipeline_message_wrap, timer
+from utils import pipeline_message_wrap, timer, handle_exception
 import os
 import logging
 from main_funcs import connect_preprod
@@ -11,6 +11,9 @@ from main_funcs import connect_preprod
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
 logger = logging.getLogger()
+__mycode = True
+sys.excepthook = handle_exception
+
 
 # connected to preprod
 host = os.environ.get('PREPRODHOST')
@@ -46,6 +49,10 @@ def process_section2():
             s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
         else:
             pass
+
+    # once complete, update filetracker
+    cursor.execute("""update companies_house_filetracker
+     set section2 = true where filename = %s and section2 is null""", ('',))
 
 
 if __name__ == '__main__':

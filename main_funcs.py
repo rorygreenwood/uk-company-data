@@ -40,12 +40,6 @@ def add_organisation_id(cursor, db):
     db.commit()
 
 
-def _add_organisation_id_retro(cursor, db):
-    cursor.execute("""update raw_companies_house_input_stage
-     set organisation_id = CONCAT('UK', company_number) where organisation_id is null""")
-    db.commit()
-
-
 # ORGANISATION WORK
 @timer
 def write_to_org(cursor, db):
@@ -130,84 +124,6 @@ def update_org_activity(cursor, db):
     """)
 
     db.commit()
-
-
-def _del_from_org(cursor, db):
-    """
-    iterates over several delete statements to remove records of a company from all tables linked to organisation
-    and then delete the row itself.
-    DO NOT RUN - WE NOT LONGER DELETE FROM ORGANISATION
-    :param cursor:
-    :param db:
-    :return:
-    """
-    table_set_a = ['organisation_filing_history', 'organisation_officer_appointment', 'sic_code', 'geo_location',
-                   'organisation_digital_maturity', 'director', 'alias_name', 'isic_organisations_mapped',
-                   'domain_alias', 'tags', 'social_handles', 'frontend_quicksearch_history', 'hgdata_entries',
-                   'previous_name', 'organisation_appointment_details', 'hgdata_organisation',
-                   'organisation_competencies',
-                   'financial_summary', 'detailed_financials', 'employee_estimation', 'organisation_group_structure',
-                   'ryan_competencyID_organisationID']
-    table_set_b = [('organisation_merger_details', 'org_1_id', 'org_2_id'),
-                   ('organisation_funding_details', 'funded_organisation_id', 'leading_organisation_id')]
-    table_set_c = ['social_youtube_account_topics',
-                   'social_youtube_history']
-
-    cursor.execute("""select o.id, o.company_name from organisation o inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' """)
-    companies = cursor.fetchall()
-    # cname fail list consists of company name, table name
-    c_name_fail_list = []
-    for c_id, c_name in companies:
-
-        for table in table_set_a:
-            try:
-                cursor.execute(f"""delete from {table} where organisation_id = {c_id})""")
-                db.commit()
-            except Exception as e:
-                print(e)
-                c_name_fail_list.append((c_id, c_name, table, e))
-                pass
-
-        for table, col1, col2 in table_set_b:
-            try:
-                cursor.execute(f"""delete from {table} where {col1} = {c_id}
-            or {col2} = {c_id};""")
-                db.commit()
-            except Exception as e:
-                print(e)
-                c_name_fail_list.append((c_id, c_name, table, e))
-                pass
-
-        for table in table_set_c:
-            try:
-                cursor.execute(f"""delete from {table} where youtube_account_id in
-            (select id from social_youtube_account where organisation_id = {c_id})""")
-                db.commit()
-            except Exception as e:
-                print(e)
-                c_name_fail_list.append((c_id, c_name, table, e))
-                pass
-            try:
-                cursor.execute(f"""delete from social_youtube_account where organisation_id = {c_id};""")
-                db.commit()
-            except Exception as e:
-                print(e)
-                c_name_fail_list.append((c_id, c_name, table, e))
-                pass
-            try:
-                cursor.execute(f"""delete from organisation where id = {c_id}""")
-                db.commit()
-            except Exception as e:
-                print(e)
-                c_name_fail_list.append((c_id, c_name, table, e))
-                pass
-    for company_id, company_name, preprod_table, error_text in c_name_fail_list:
-        # cursor.execute("""insert into companies_house_pipeline_failed_removals
-        #  (company_id, company_name, table_name, error_text) VALUES (%s, %s, %s, %s) """,
-        #                company_id, company_name, preprod_table, error_text
-        #                )
-        db.commit()
 
 
 @timer
@@ -324,31 +240,6 @@ from
          address_type = 'SUB_OFFICE') gl
 left join raw_companies_house_input_stage rchis on gl.md5_key = rchis.md5_key
 where rchis.md5_key is null""")
-    db.commit()
-
-
-def _geolocation_clean_headoffices(cursor, db):
-    """
-    removes head office addresses that do not appear in the raw companies house file.
-    If they do not appear in the companies house file for the month, we can assume the address is no longer part
-    of the company?
-    todo as of 15/09/23 not using this
-    :param cursor:
-    :param db:
-    :return:
-    """
-    cursor.execute("""delete from geo_location where md5_key in (
-select
-    gl.md5_key
-from
-    (select
-         md5_key
-     from geo_location
-     where
-         country = 'UK' and
-         address_type = 'HEAD_OFFICE') gl
-left join raw_companies_house_input_stage rchis on gl.md5_key = rchis.md5_key
-where rchis.md5_key is null)""")
     db.commit()
 
 

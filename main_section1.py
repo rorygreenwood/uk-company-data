@@ -39,10 +39,10 @@ def collect_companieshouse_file(filename):
 def send_to_s3(filename, s3_url='s3://iqblade-data-services-companieshouse-fragments/'):
     """sends a file to a given s3 bucket, default is iqblade-td"""
     s3_client = boto3.client('s3',
-                            aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
-                            aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
-                            region_name='eu-west-1'
-                            )
+                             aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
+                             aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
+                             region_name='eu-west-1'
+                             )
     s3_client.upload_file(filename, s3_url, filename)
 
 
@@ -118,13 +118,13 @@ def search_and_collect_ch_file(firstdateofmonth: datetime.date):
     request_content_soup = bs4.BeautifulSoup(request_content, 'html.parser')
     links = request_content_soup.find_all('a')
     # check links on product page for the current date string from firstdateofmonth
-    str_month = firstdateofmonth.strftime('%Y-%m')
-    logger.info(str_month)
+    year_month = firstdateofmonth.strftime('%Y-%m')
+    logger.info(year_month)
     filename = ''
     while filename == '':
         for link in links:
             logger.info(f'link in loop: {link}')
-            if str_month in link.text:
+            if year_month in link.text:
                 logger.info(f'new file found: {link.text}')
                 logger.info(link)
                 filename = link['href']

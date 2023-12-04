@@ -27,3 +27,5 @@ def process_section3(cursor, db):
 if __name__ == '__main__':
     cursor, db = connect_preprod()
     process_section3(cursor, db)
+    cursor.execute("""update companies_house_filetracker set section3 = TRUE where filename = %s""", ('', ))
+    db.commit()

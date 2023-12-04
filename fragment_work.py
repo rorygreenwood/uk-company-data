@@ -30,14 +30,19 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     """
     constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
     df = pd.read_csv(fragment, encoding='utf-8', low_memory=False)
-    # transform
+
+    # clean data and add debugging
     df.rename(columns=companies_house_conversion_dict, inplace=True)
     df['SourceFile'] = fragment
     df['Date_of_insert'] = datetime.datetime.today()
     df['number_of_employees'] = None
     df['phone_number'] = ''
+
+    # ensure table is empty by truncating here
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
+
+    # send to staging
     df_to_sql_t1 = time.time()
     df.to_sql(name='raw_companies_house_input_stage_df', con=constring, if_exists='append',
               index=False)
@@ -105,69 +110,10 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
                                                         raw_companies_house_input_stage.phone_number = raw_companies_house_input_stage_df.phone_number,
                                                         raw_companies_house_input_stage.number_of_employees = raw_companies_house_input_stage_df.number_of_employees""")
     cursordb.commit()
-    cursor.execute("""truncate raw_companies_house_input_stage_df""")
-    cursordb.commit()
 
 
 @timer
-def _parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
-    logger.info(f'parse_fragment_sic: {fragment}')
-    cursor.execute("""truncate companies_house_sic_pool""")
-    ppdb.commit()
-    constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
-    df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1',
-                                        'SICCode.SicText_2', 'SICCode.SicText_3', 'SICCode.SicText_4'])
-    df.rename(columns=sic_code_conversion_dict, inplace=True)
-    df['FilePath'] = fragment + 'HISTORICAL'
-    fragment_path = fragment + 'HISTORICAL'
-    df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
-              index=False)
-
-    cursor.execute("""update companies_house_sic_pool
-set
-    SicText_1 = SUBSTRING_INDEX(SicText_1, '-', 1),
-    SicText_2 = SUBSTRING_INDEX(SicText_2, '-', 1),
-    SicText_3 = SUBSTRING_INDEX(SicText_3, '-', 1),
-    SicText_4 = SUBSTRING_INDEX(SicText_4, '-', 1)""")
-    ppdb.commit()
-    # change md5 from company number to sic code
-    cursor.execute("""update companies_house_sic_pool
-     set md5_str = md5(concat(CompanyNumber, FilePath))
-    where md5_str is null and FilePath = %s
-    """, (fragment_path,))
-    ppdb.commit()
-    # remove text and keep regex
-    cursor.execute("""update companies_house_sic_pool
-     set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
-    """)
-    ppdb.commit()
-    # add parsing to sic_count counts with a truncate
-    cursor.execute("""
-    insert into companies_house_sic_counts (sic_code, sic_code_count, file_date, md5_str)
-                        select SicText_1, count(*), Filepath,
-                        md5_str from companies_house_sic_pool
-                        group by SicText_1, Filepath
-                    union
-                        select SicText_2, count(*), Filepath,
-                        md5_str from companies_house_sic_pool
-                        group by SicText_2, Filepath
-                    union
-                        select SicText_3, count(*), Filepath,
-                        md5_str from companies_house_sic_pool
-                        group by SicText_3, Filepath
-                    union
-                        select SicText_4, count(*), Filepath,
-                        md5_str from companies_house_sic_pool
-                        group by SicText_4, Filepath
-                    on duplicate key update 
-                     companies_house_sic_counts.md5_str = companies_house_sic_counts.md5_str""")
-    ppdb.commit()
-    cursor.execute("""truncate table companies_house_sic_pool""")
-    ppdb.commit()
-
-
-@timer
-def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
+def parse_fragment_sic(fragment, user, passwd, host, constring_database, cursor, db):
     """
     rewrite into new stages
     1. write into table where are sic codes are in one column
@@ -175,18 +121,16 @@ def parse_fragment_sic(fragment, user, passwd, host, db, cursor, ppdb):
     3. insert into final table (sic code, file path, count, md5)
     """
     cursor.execute("""truncate companies_house_sic_pool""")
-    ppdb.commit()
-    constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
+    db.commit()
+    constring = f'mysql://{user}:{passwd}@{host}:3306/{constring_database}'
     df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
                                         'SICCode.SicText_4'])
     df.rename(columns=companies_house_conversion_dict, inplace=True)
     df['FilePath'] = fragment + 'HISTORICAL'
-    fragment_path = fragment + 'HISTORICAL'
     df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
               index=False)
 
     # change pandas work to a sql query pulling from the rchis file
-
     cursor.execute("""insert into companies_house_sic_pool (CompanyNumber, SicText_1, SicText_2, SicText_3, SicText_4, FilePath, md5_str) SELECT 
     company_number, sic_text_1, sic_text_2, SICCode_SicText_3, SICCode_SicText_4, SourceFile, md5_key from raw_companies_house_input_stage
     """)
@@ -199,11 +143,13 @@ set
     SicText_2 = SUBSTRING_INDEX(SicText_2, '-', 1),
     SicText_3 = SUBSTRING_INDEX(SicText_3, '-', 1),
     SicText_4 = SUBSTRING_INDEX(SicText_4, '-', 1)""")
-    ppdb.commit()
+    db.commit()
+
     cursor.execute("""update companies_house_sic_pool
      set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
     """)
-    ppdb.commit()
+    db.commit()
+
     # takes records from the sic pool as a fragment is upload to sic_pool
     # writes them into staging
     cursor.execute("""
@@ -227,16 +173,19 @@ select sic_code, sum(sic_count), FilePath from (select SicText_1 as sic_code, co
                              from companies_house_sic_pool
                              where SicText_4 is not null
                              group by SicText_4, Filepath) t1 group by sic_code""")
-    ppdb.commit()
+    db.commit()
+
     # truncate sic_pool table as data no longer required
     cursor.execute("""truncate table companies_house_sic_pool""")
-    ppdb.commit()
+    db.commit()
+
     # once in staging_1, they are given an md5
     cursor.execute("""
     update companies_house_sic_code_staging_1 
     set md5_str = md5(concat(sic_code, file_date))
     where md5_str is null""")
-    ppdb.commit()
+    db.commit()
+
     # inserted into second staging table, where on a duplicate update the two
     # counts for that sic code are added together
     # sic_code_staging_2 houses the counts for the CH file being processed at that time. Once complete, these will
@@ -246,17 +195,19 @@ select sic_code, sum(sic_count), FilePath from (select SicText_1 as sic_code, co
         on duplicate key update
         companies_house_sic_code_staging_2.sic_code_count = companies_house_sic_code_staging_2.sic_code_count + t2.sic_code_count
         """)
-    ppdb.commit()
+    db.commit()
+
     # truncate staging_1 as it is no longer required
     cursor.execute("""truncate table companies_house_sic_code_staging_1""")
+    db.commit()
 
 
 @timer
-def parse_rchis_sic(cursor, ppdb):
+def parse_rchis_sic(cursor, db):
     cursor.execute("""insert into companies_house_sic_pool (CompanyNumber, SicText_1, SicText_2, SicText_3, SicText_4, FilePath, md5_str) SELECT 
         company_number, sic_text_1, sic_text_2, SICCode_SicText_3, SICCode_SicText_4, SourceFile, md5_key from raw_companies_house_input_stage
         """)
-    ppdb.commit()
+    db.commit()
 
     # remove the text from the sic codes so we are just left with numbers
     cursor.execute("""update companies_house_sic_pool
@@ -265,11 +216,11 @@ def parse_rchis_sic(cursor, ppdb):
         SicText_2 = SUBSTRING_INDEX(SicText_2, '-', 1),
         SicText_3 = SUBSTRING_INDEX(SicText_3, '-', 1),
         SicText_4 = SUBSTRING_INDEX(SicText_4, '-', 1)""")
-    ppdb.commit()
+    db.commit()
     cursor.execute("""update companies_house_sic_pool
          set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
         """)
-    ppdb.commit()
+    db.commit()
     # takes records from the sic pool as a fragment is upload to sic_pool
     # writes them into staging
     cursor.execute("""
@@ -293,16 +244,16 @@ def parse_rchis_sic(cursor, ppdb):
                                  from companies_house_sic_pool
                                  where SicText_4 is not null
                                  group by SicText_4, Filepath) t1 group by sic_code""")
-    ppdb.commit()
+    db.commit()
     # truncate sic_pool table as data no longer required
     cursor.execute("""truncate table companies_house_sic_pool""")
-    ppdb.commit()
+    db.commit()
     # once in staging_1, they are given an md5
     cursor.execute("""
         update companies_house_sic_code_staging_1 
         set md5_str = md5(concat(sic_code, file_date))
         where md5_str is null""")
-    ppdb.commit()
+    db.commit()
     # inserted into second staging table, where on a duplicate update the two
     # counts for that sic code are added together
     # sic_code_staging_2 houses the counts for the CH file being processed at that time. Once complete, these will
@@ -312,7 +263,7 @@ def parse_rchis_sic(cursor, ppdb):
             on duplicate key update
             companies_house_sic_code_staging_2.sic_code_count = companies_house_sic_code_staging_2.sic_code_count + t2.sic_code_count
             """)
-    ppdb.commit()
+    db.commit()
     # truncate staging_1 as it is no longer required
     cursor.execute("""truncate table companies_house_sic_code_staging_1""")
 
