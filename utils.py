@@ -79,10 +79,11 @@ def pipeline_message_wrap(func):
             azure_pipeline_name = os.environ.get('BUILD_DEFINITIONNAME')
         except Exception:
             azure_pipeline_name = 'localhost'
+        function_name = func.__name__
+        script_name = os.path.basename(__file__)
         try:
             __mycode = False
-            function_name = func.__name__
-            script_name = os.path.basename(__file__)
+
             logger.info('starting func')
             start_time = time.time()
             result = func(*args, **kwargs)
@@ -90,22 +91,25 @@ def pipeline_message_wrap(func):
             logger.info('sending message')
             end_time = time.time()
             execution_time = end_time - start_time
-            logger.info(f"Function: '{function_name}' in script '{script_name}' of pipeline '{azure_pipeline_name}' took {execution_time} seconds")
+            logger.info(
+                f"Function: '{function_name}' in script '{script_name}' of pipeline '{azure_pipeline_name}' took {execution_time} seconds")
             pipeline_messenger(title=f'{function_name} in {script_name} of project {azure_pipeline_name} has passed!',
                                text=str(f'process took {execution_time} seconds'),
                                hexcolour_value='pass')
             print('this is a test')
         except Exception:
             result = None
-            pipeline_messenger(title=f'{func.__name__} in {__file__} has failed', text=str(traceback.format_exc()),
-                               hexcolour_value='fail')
+            pipeline_messenger(
+                title=f'{func.__name__} in {__file__} of script {script_name} of pipeline {azure_pipeline_name} has failed',
+                text=str(traceback.format_exc()),
+                hexcolour_value='fail')
         return result
 
     return pipeline_message_wrapper
 
 
 @timer
-def date_check(file_date: datetime.date, cursor):
+def _date_check(file_date: datetime.date, cursor):
     """
     checks for presence of specified month's file in filetracker
     :param file_date:
@@ -123,7 +127,7 @@ def date_check(file_date: datetime.date, cursor):
 
 
 @timer
-def date_check_sic(file_date: datetime.date, cursor):
+def _date_check_sic(file_date: datetime.date, cursor):
     """
     returns a boolean depending on whether or not the specified monthly data file is already present in the
     sic code filetracker
@@ -160,6 +164,21 @@ def unzip_ch_file_s3_send(file_name, s3_url='s3://iqblade-data-services-tdsynnex
 
 
 @timer
+def unzip_ch_file(file_name):
+    """
+    unzips a given filename into the output directory specified
+    :param s3_url:
+    :param file_name:
+    :return: file_name.replace('.zip', '.csv')
+    """
+    filepath = f'file_downloader/files/{file_name}'
+    output_directory = 'file_downloader/files'
+    with zipfile.ZipFile(filepath, 'r') as zip_ref:
+        zip_ref.extractall(output_directory)
+    return file_name.replace('.zip', '.csv')
+
+
+@timer
 def fragment_file(file_name: str, output_dir: str):
     """
     divides a given file into the given output_dir str variable,
@@ -172,3 +191,36 @@ def fragment_file(file_name: str, output_dir: str):
     split = Split(file_name, output_dir)
     split.bylinecount(linecount=50000, includeheader=True)
     os.remove(f'{output_dir}manifest')
+
+
+def checkcount_organisation_inserts(cursor):
+    cursor.execute("""select count(*) from raw_companies_house_input_stage""")
+    res = cursor.fetchall()
+    rchis_count = res[0][0]
+    print(rchis_count, ' rchis count')
+
+    cursor.execute(
+        """select count(*) from organisation where month(last_modified_date) = month(curdate()) and year(last_modified_date) = year(curdate())""")
+    res = cursor.fetchall()
+    organisation_count = res
+    print(organisation_count, ' organisation count')
+
+    # todo sic codes required a date_last_modified or equivalent
+    cursor.execute(
+        """select count(*) from sic_code where month(date_last_modified) = month(curdate()) and year(date_last_modified) = year(curdate())""")
+    res = cursor.fetchall()
+    sic_code_count = res
+    print(sic_code_count, ' sic_code count')
+
+    cursor.execute(
+        """select count(*) from geo_location where month(date_last_modified) = month(curdate()) and year(date_last_modified) = year(curdate())""")
+    res = cursor.fetchall()
+    geo_location_count = res
+    print(geo_location_count, ' geo_location count')
+
+
+if __name__ == '__main__':
+    from main_funcs import connect_preprod
+
+    cursor, db = connect_preprod()
+    checkcount_organisation_inserts(cursor=cursor)

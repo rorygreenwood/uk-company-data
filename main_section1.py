@@ -3,9 +3,11 @@ import re
 import time
 import os
 import subprocess
+import pathlib
 
 import bs4
 import boto3
+import pandas as pd
 import requests
 import requests as r
 import datetime
@@ -15,6 +17,16 @@ from main_funcs import connect_preprod
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+
+
+def custom_sort_key(file_path):
+    """takes a csv fragment name and finds out what number fragment it is, the fragments will then be ordered by
+    this value in order to find the final fragment which is assumed to not have 49,999 rows.
+    """
+    filename = file_path.name
+    number = int(filename.split('_')[-1].replace('.csv', ''))
+    print(number)
+    return number
 
 
 @timer
@@ -81,7 +93,8 @@ def file_check_regex(cursor, db):
                 # download file
                 logger.info('file found to download')
                 file_to_download = file_str_match[0]
-                # collect_companieshouse_file(filename=file_to_download)
+                collect_companieshouse_file(filename=file_to_download)
+
                 # unzip file and send .zip to s3
                 unzipped_file = unzip_ch_file_s3_send(f'{file_to_download}')
                 # fragment file
@@ -89,6 +102,24 @@ def file_check_regex(cursor, db):
                               output_dir='file_downloader/files/fragments/')
                 # move fragments to s3 bucket
                 list_of_fragments = os.listdir('file_downloader/files/fragments/')
+                # calculate number of rows in file, and then
+                path_objects = [pathlib.Path(f) for f in list_of_fragments]
+                csv_files = list(filter(lambda path: path.suffix == '.csv', path_objects))
+                sorted_csv_files = sorted(csv_files, key=custom_sort_key)
+
+                # the majority of these fragments will be 49,999 rows long. There will be 1 fragment file that is not.
+                # there is also a fragments.txt file that needs to be ignored.
+
+                count_of_full_fragments = len(csv_files) - 1
+                fragment_count = count_of_full_fragments * 49999
+
+                final_file_df = pd.read_csv(f's3_fragments/{sorted_csv_files[-1]}')
+                fragment_count = fragment_count - len(final_file_df)
+                print(fragment_count, 'fragment count')
+                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
+                 VALUES (%s, %s)""", (file_to_download.replace('.zip', ''), fragment_count))
+                db.commit()
+
                 s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
                  for fragment in list_of_fragments]

@@ -23,6 +23,19 @@ def connect_preprod():
     return cursor, db
 
 
+@timer
+def connect_preprod_readonly():
+    db = mysql.connector.connect(
+        host=os.environ.get('PREPRODHOST_READONLY'),
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
+        database=os.environ.get('DATABASE'),
+    )
+
+    cursor = db.cursor()
+    return cursor, db
+
+
 # COMPANIES HOUSE TABLE
 @timer
 def add_organisation_id(cursor, db):
@@ -161,6 +174,9 @@ def geolocation_md5_gen(cursor, db):
     :param db:
     :return:
     """
+    cursor.execute(
+        """update raw_companies_house_input_stage set reg_address_postcode = '' where reg_address_postcode is null""")
+    db.commit()
     cursor.execute("""update raw_companies_house_input_stage
     set md5_key = MD5(CONCAT(organisation_id, reg_address_postcode)) where md5_key is null """)
     db.commit()
@@ -216,7 +232,8 @@ def geolocation_insert_excess(cursor, db):
            md5(concat(rchis.organisation_id, reg_address_postcode)), curdate(), 'CompaniesHouse_DataTransfer - geo_location_insert'
         from raw_companies_house_input_stage rchis
         left join geo_location gl on gl.md5_key = rchis.md5_key
-        where gl.md5_key is null""")
+        where gl.md5_key is null
+        """)
     db.commit()
 
 

@@ -37,8 +37,9 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     df['Date_of_insert'] = datetime.datetime.today()
     df['number_of_employees'] = None
     df['phone_number'] = ''
-
+    size_of_fragment = len(df)
     # ensure table is empty by truncating here
+    logger.info(f'size of fragment: {size_of_fragment}')
     cursor.execute("""truncate raw_companies_house_input_stage_df""")
     cursordb.commit()
 
@@ -46,70 +47,80 @@ def parse_fragment(fragment: str, host: str, user: str, passwd: str, db, cursor,
     df_to_sql_t1 = time.time()
     df.to_sql(name='raw_companies_house_input_stage_df', con=constring, if_exists='append',
               index=False)
+    df.fillna(' ')
     df_to_sql_t2 = time.time()
     logger.info(f'time for df_to_sql: {df_to_sql_t2 - df_to_sql_t1}')
-    cursor.execute("""insert into raw_companies_house_input_stage select * from raw_companies_house_input_stage_df
+    cursor.execute("""select count(*) from raw_companies_house_input_stage_df""")
+    count_result = cursor.fetchall()
+    count_num_in_rchisdf = count_result[0][0]
+    logger.info(f'size of raw_companies_house_input_stage_df: {count_num_in_rchisdf}')
+    cursor.execute("""
+    insert into raw_companies_house_input_stage select * from raw_companies_house_input_stage_df rchisdf
     on duplicate key update
-    raw_companies_house_input_stage.company_name = raw_companies_house_input_stage_df.company_name,
-                                                        raw_companies_house_input_stage.company_number = raw_companies_house_input_stage_df.company_number,
-                                                        raw_companies_house_input_stage.RegAddress_CareOf = raw_companies_house_input_stage_df.RegAddress_CareOf,
-                                                        raw_companies_house_input_stage.RegAddress_POBox = raw_companies_house_input_stage_df.RegAddress_POBox,
-                                                        raw_companies_house_input_stage.reg_address_line1 = raw_companies_house_input_stage_df.reg_address_line1,
-                                                        raw_companies_house_input_stage.reg_address_line2 = raw_companies_house_input_stage_df.reg_address_line2,
-                                                        raw_companies_house_input_stage.reg_address_posttown = raw_companies_house_input_stage_df.reg_address_posttown,
-                                                        raw_companies_house_input_stage.reg_address_county = raw_companies_house_input_stage_df.reg_address_county,
-                                                        raw_companies_house_input_stage.RegAddress_Country = raw_companies_house_input_stage_df.RegAddress_Country,
-                                                        raw_companies_house_input_stage.reg_address_postcode = raw_companies_house_input_stage_df.reg_address_postcode,
-                                                        raw_companies_house_input_stage.CompanyCategory = raw_companies_house_input_stage_df.CompanyCategory,
-                                                        raw_companies_house_input_stage.company_status = raw_companies_house_input_stage_df.company_status,
-                                                        raw_companies_house_input_stage.country_of_origin = raw_companies_house_input_stage_df.country_of_origin,
-                                                        raw_companies_house_input_stage.DissolutionDate = raw_companies_house_input_stage_df.DissolutionDate,
-                                                        raw_companies_house_input_stage.IncorporationDate = raw_companies_house_input_stage_df.IncorporationDate,
-                                                        raw_companies_house_input_stage.Accounts_AccountRefDay = raw_companies_house_input_stage_df.Accounts_AccountRefDay,
-                                                        raw_companies_house_input_stage.Accounts_AccountRefMonth = raw_companies_house_input_stage_df.Accounts_AccountRefMonth,
-                                                        raw_companies_house_input_stage.Accounts_NextDueDate = raw_companies_house_input_stage_df.Accounts_NextDueDate,
-                                                        raw_companies_house_input_stage.Accounts_LastMadeUpDate = raw_companies_house_input_stage_df.Accounts_LastMadeUpDate,
-                                                        raw_companies_house_input_stage.Accounts_AccountCategory = raw_companies_house_input_stage_df.Accounts_AccountCategory,
-                                                        raw_companies_house_input_stage.Returns_NextDueDate = raw_companies_house_input_stage_df.Returns_NextDueDate,
-                                                        raw_companies_house_input_stage.Returns_LastMadeUpDate = raw_companies_house_input_stage_df.Returns_LastMadeUpDate,
-                                                        raw_companies_house_input_stage.Mortgages_NumMortCharges = raw_companies_house_input_stage_df.Mortgages_NumMortCharges,
-                                                        raw_companies_house_input_stage.Mortgages_NumMortOutstanding = raw_companies_house_input_stage_df.Mortgages_NumMortOutstanding,
-                                                        raw_companies_house_input_stage.Mortgages_NumMortPartSatisfied = raw_companies_house_input_stage_df.Mortgages_NumMortPartSatisfied,
-                                                        raw_companies_house_input_stage.Mortgages_NumMortSatisfied = raw_companies_house_input_stage_df.Mortgages_NumMortSatisfied,
-                                                        raw_companies_house_input_stage.sic_text_1 = raw_companies_house_input_stage_df.sic_text_1,
-                                                        raw_companies_house_input_stage.sic_text_2 = raw_companies_house_input_stage_df.sic_text_2,
-                                                        raw_companies_house_input_stage.SICCode_SicText_3 = raw_companies_house_input_stage_df.SICCode_SicText_3,
-                                                        raw_companies_house_input_stage.SICCode_SicText_4 = raw_companies_house_input_stage_df.SICCode_SicText_4,
-                                                        raw_companies_house_input_stage.LimitedPartnerships_NumGenPartners = raw_companies_house_input_stage_df.LimitedPartnerships_NumGenPartners,
-                                                        raw_companies_house_input_stage.LimitedPartnerships_NumLimPartners = raw_companies_house_input_stage_df.LimitedPartnerships_NumLimPartners,
-                                                        raw_companies_house_input_stage.URI = raw_companies_house_input_stage_df.URI,
-                                                        raw_companies_house_input_stage.PreviousName_1_CONDATE = raw_companies_house_input_stage_df.PreviousName_1_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_1_CompanyName = raw_companies_house_input_stage_df.PreviousName_1_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_2_CONDATE = raw_companies_house_input_stage_df.PreviousName_2_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_2_CompanyName = raw_companies_house_input_stage_df.PreviousName_2_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_3_CONDATE = raw_companies_house_input_stage_df.PreviousName_3_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_3_CompanyName = raw_companies_house_input_stage_df.PreviousName_3_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_4_CONDATE = raw_companies_house_input_stage_df.PreviousName_4_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_4_CompanyName = raw_companies_house_input_stage_df.PreviousName_4_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_5_CONDATE = raw_companies_house_input_stage_df.PreviousName_5_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_5_CompanyName = raw_companies_house_input_stage_df.PreviousName_5_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_6_CONDATE = raw_companies_house_input_stage_df.PreviousName_6_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_6_CompanyName = raw_companies_house_input_stage_df.PreviousName_6_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_7_CONDATE = raw_companies_house_input_stage_df.PreviousName_7_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_7_CompanyName = raw_companies_house_input_stage_df.PreviousName_7_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_8_CONDATE = raw_companies_house_input_stage_df.PreviousName_8_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_8_CompanyName = raw_companies_house_input_stage_df.PreviousName_8_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_9_CONDATE = raw_companies_house_input_stage_df.PreviousName_9_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_9_CompanyName = raw_companies_house_input_stage_df.PreviousName_9_CompanyName,
-                                                        raw_companies_house_input_stage.PreviousName_10_CONDATE = raw_companies_house_input_stage_df.PreviousName_10_CONDATE,
-                                                        raw_companies_house_input_stage.PreviousName_10_CompanyName = raw_companies_house_input_stage_df.PreviousName_10_CompanyName,
-                                                        raw_companies_house_input_stage.ConfStmtNextDueDate = raw_companies_house_input_stage_df.ConfStmtNextDueDate,
-                                                        raw_companies_house_input_stage.ConfStmtLastMadeUpDate = raw_companies_house_input_stage_df.ConfStmtLastMadeUpDate,
-                                                        raw_companies_house_input_stage.Date_Of_Insert = raw_companies_house_input_stage_df.Date_Of_Insert,
-                                                        raw_companies_house_input_stage.SourceFile = raw_companies_house_input_stage_df.SourceFile,
-                                                        raw_companies_house_input_stage.phone_number = raw_companies_house_input_stage_df.phone_number,
-                                                        raw_companies_house_input_stage.number_of_employees = raw_companies_house_input_stage_df.number_of_employees""")
+    raw_companies_house_input_stage.company_name = rchisdf.company_name,
+                                                        raw_companies_house_input_stage.company_number = rchisdf.company_number,
+                                                        raw_companies_house_input_stage.RegAddress_CareOf = rchisdf.RegAddress_CareOf,
+                                                        raw_companies_house_input_stage.RegAddress_POBox = rchisdf.RegAddress_POBox,
+                                                        raw_companies_house_input_stage.reg_address_line1 = rchisdf.reg_address_line1,
+                                                        raw_companies_house_input_stage.reg_address_line2 = rchisdf.reg_address_line2,
+                                                        raw_companies_house_input_stage.reg_address_posttown = rchisdf.reg_address_posttown,
+                                                        raw_companies_house_input_stage.reg_address_county = rchisdf.reg_address_county,
+                                                        raw_companies_house_input_stage.RegAddress_Country = rchisdf.RegAddress_Country,
+                                                        raw_companies_house_input_stage.reg_address_postcode = rchisdf.reg_address_postcode,
+                                                        raw_companies_house_input_stage.CompanyCategory = rchisdf.CompanyCategory,
+                                                        raw_companies_house_input_stage.company_status = rchisdf.company_status,
+                                                        raw_companies_house_input_stage.country_of_origin = rchisdf.country_of_origin,
+                                                        raw_companies_house_input_stage.DissolutionDate = rchisdf.DissolutionDate,
+                                                        raw_companies_house_input_stage.IncorporationDate = rchisdf.IncorporationDate,
+                                                        raw_companies_house_input_stage.Accounts_AccountRefDay = rchisdf.Accounts_AccountRefDay,
+                                                        raw_companies_house_input_stage.Accounts_AccountRefMonth = rchisdf.Accounts_AccountRefMonth,
+                                                        raw_companies_house_input_stage.Accounts_NextDueDate = rchisdf.Accounts_NextDueDate,
+                                                        raw_companies_house_input_stage.Accounts_LastMadeUpDate = rchisdf.Accounts_LastMadeUpDate,
+                                                        raw_companies_house_input_stage.Accounts_AccountCategory = rchisdf.Accounts_AccountCategory,
+                                                        raw_companies_house_input_stage.Returns_NextDueDate = rchisdf.Returns_NextDueDate,
+                                                        raw_companies_house_input_stage.Returns_LastMadeUpDate = rchisdf.Returns_LastMadeUpDate,
+                                                        raw_companies_house_input_stage.Mortgages_NumMortCharges = rchisdf.Mortgages_NumMortCharges,
+                                                        raw_companies_house_input_stage.Mortgages_NumMortOutstanding = rchisdf.Mortgages_NumMortOutstanding,
+                                                        raw_companies_house_input_stage.Mortgages_NumMortPartSatisfied = rchisdf.Mortgages_NumMortPartSatisfied,
+                                                        raw_companies_house_input_stage.Mortgages_NumMortSatisfied = rchisdf.Mortgages_NumMortSatisfied,
+                                                        raw_companies_house_input_stage.sic_text_1 = rchisdf.sic_text_1,
+                                                        raw_companies_house_input_stage.sic_text_2 = rchisdf.sic_text_2,
+                                                        raw_companies_house_input_stage.SICCode_SicText_3 = rchisdf.SICCode_SicText_3,
+                                                        raw_companies_house_input_stage.SICCode_SicText_4 = rchisdf.SICCode_SicText_4,
+                                                        raw_companies_house_input_stage.LimitedPartnerships_NumGenPartners = rchisdf.LimitedPartnerships_NumGenPartners,
+                                                        raw_companies_house_input_stage.LimitedPartnerships_NumLimPartners = rchisdf.LimitedPartnerships_NumLimPartners,
+                                                        raw_companies_house_input_stage.URI = rchisdf.URI,
+                                                        raw_companies_house_input_stage.PreviousName_1_CONDATE = rchisdf.PreviousName_1_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_1_CompanyName = rchisdf.PreviousName_1_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_2_CONDATE = rchisdf.PreviousName_2_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_2_CompanyName = rchisdf.PreviousName_2_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_3_CONDATE = rchisdf.PreviousName_3_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_3_CompanyName = rchisdf.PreviousName_3_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_4_CONDATE = rchisdf.PreviousName_4_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_4_CompanyName = rchisdf.PreviousName_4_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_5_CONDATE = rchisdf.PreviousName_5_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_5_CompanyName = rchisdf.PreviousName_5_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_6_CONDATE = rchisdf.PreviousName_6_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_6_CompanyName = rchisdf.PreviousName_6_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_7_CONDATE = rchisdf.PreviousName_7_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_7_CompanyName = rchisdf.PreviousName_7_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_8_CONDATE = rchisdf.PreviousName_8_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_8_CompanyName = rchisdf.PreviousName_8_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_9_CONDATE = rchisdf.PreviousName_9_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_9_CompanyName = rchisdf.PreviousName_9_CompanyName,
+                                                        raw_companies_house_input_stage.PreviousName_10_CONDATE = rchisdf.PreviousName_10_CONDATE,
+                                                        raw_companies_house_input_stage.PreviousName_10_CompanyName = rchisdf.PreviousName_10_CompanyName,
+                                                        raw_companies_house_input_stage.ConfStmtNextDueDate = rchisdf.ConfStmtNextDueDate,
+                                                        raw_companies_house_input_stage.ConfStmtLastMadeUpDate = rchisdf.ConfStmtLastMadeUpDate,
+                                                        raw_companies_house_input_stage.Date_Of_Insert = rchisdf.Date_Of_Insert,
+                                                        raw_companies_house_input_stage.SourceFile = rchisdf.SourceFile,
+                                                        raw_companies_house_input_stage.phone_number = rchisdf.phone_number,
+                                                        raw_companies_house_input_stage.number_of_employees = rchisdf.number_of_employees,
+                                                        raw_companies_house_input_stage.md5_key = md5(concat(rchisdf.organisation_id, rchisdf.reg_address_postcode))""")
     cursordb.commit()
+    cursor.execute("""select count(*) from raw_companies_house_input_stage""")
+    res = cursor.fetchall()
+    logger.info(f'count of raw_companies_house_input_stage: {res[0][0]}')
 
 
 @timer
@@ -266,25 +277,6 @@ def parse_rchis_sic(cursor, db):
     db.commit()
     # truncate staging_1 as it is no longer required
     cursor.execute("""truncate table companies_house_sic_code_staging_1""")
-
-
-def _parse_fragment(fragment, host, user, passwd, db, cursor, cursordb, company_file_table):
-    constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
-    dbEngine = sqlalchemy.create_engine(constring)
-
-    df = pd.read_csv(fragment, encoding='utf-8', dtype=companies_house_file_data_types, low_memory=False,
-                     # usecols=['company_number', 'company_name', 'sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4']
-                     )
-    # df.rename(columns=dtype_dict_comp, inplace=True)
-    cursor.execute("""truncate raw_companies_house_input_stage_df""")
-    cursordb.commit()
-    # may change to this line after deprecations
-    # df = df.set_axis(dtype_dict_columns_output, copy=False, axis=1)
-    # df.set_axis(dtype_dict_columns_output, inplace=True, axis=1)
-    df.to_sql(name=f'BasicCompanyData_sic_data_{company_file_table}', con=dbEngine, if_exists='append', index=False,
-              schema='iqblade')
-    cursordb.commit()
-
 
 @timer
 def write_to_organisation(cursor, db):

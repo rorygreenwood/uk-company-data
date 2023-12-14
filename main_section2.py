@@ -46,7 +46,7 @@ def process_section2():
             parse_fragment(f'{fragments_abspath}/{fragment_file_name}', host=host, user=user, passwd=passwd,
                            db=database, cursor=cursor, cursordb=db)
             os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
-            s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
+            # s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
         else:
             pass
 
