@@ -26,7 +26,6 @@ def process_section3(cursor, db):
     find_more_postcodes(cursor, db)  # updates rchis
 
     # work in geolocation
-    geolocation_set_postcodes(cursor, db)
     geolocation_md5_gen(cursor, db)  # generates md5 for companies
     geolocation_update_current(cursor, db)  # update geo_location
     geolocation_insert_excess(cursor, db)  # insert geolocation data
