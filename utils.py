@@ -7,6 +7,7 @@ import sys
 import time
 import traceback
 import zipfile
+import mysql.connector
 
 import requests
 from filesplit.split import Split
@@ -108,42 +109,6 @@ def pipeline_message_wrap(func):
     return pipeline_message_wrapper
 
 
-@timer
-def _date_check(file_date: datetime.date, cursor):
-    """
-    checks for presence of specified month's file in filetracker
-    :param file_date:
-    :param cursor:
-    :return:
-    """
-    cursor.execute("select * from BasicCompanyData_filetracker where MONTH(ch_upload_date) = MONTH(%s)", (file_date,))
-    res = cursor.fetchall()
-    if len(res) > 0:
-        logger.info('exists')
-        return True
-    else:
-        logger.info('does not exist')
-        return False
-
-
-@timer
-def _date_check_sic(file_date: datetime.date, cursor):
-    """
-    returns a boolean depending on whether or not the specified monthly data file is already present in the
-    sic code filetracker
-    :param file_date:
-    :param cursor:
-    :return:
-    """
-    cursor.execute("select * from BasicCompanyData_filetracker_siccode_analysis where ch_upload_date = %s",
-                   (file_date,))
-    res = cursor.fetchall()
-    if len(res) > 0:
-        logger.info('exists')
-        return True
-    else:
-        logger.info('does not exist')
-        return False
 
 
 @timer
@@ -219,8 +184,35 @@ def checkcount_organisation_inserts(cursor):
     print(geo_location_count, ' geo_location count')
 
 
-if __name__ == '__main__':
-    from main_funcs import connect_preprod
 
+@timer
+def connect_preprod():
+    db = mysql.connector.connect(
+        host=os.environ.get('PREPRODHOST'),
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
+        database=os.environ.get('DATABASE'),
+    )
+
+    cursor = db.cursor()
+    return cursor, db
+
+
+@timer
+def connect_preprod_readonly():
+    db = mysql.connector.connect(
+        host=os.environ.get('PREPRODHOST_READONLY'),
+        user=os.environ.get('ADMINUSER'),
+        passwd=os.environ.get('ADMINPASS'),
+        database=os.environ.get('DATABASE'),
+    )
+
+    cursor = db.cursor()
+    return cursor
+
+
+
+
+if __name__ == '__main__':
     cursor, db = connect_preprod()
     checkcount_organisation_inserts(cursor=cursor)

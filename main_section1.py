@@ -1,22 +1,18 @@
-import logging
-import re
-import time
+import datetime
 import os
-import subprocess
 import pathlib
+import re
+import subprocess
+import time
 
-import bs4
 import boto3
+import bs4
 import pandas as pd
 import requests
 import requests as r
-import datetime
-from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap
-from main_funcs import connect_preprod
 
-logger = logging.getLogger()
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+from main_funcs import connect_preprod
+from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap, logger
 
 
 def custom_sort_key(file_path):
@@ -48,7 +44,9 @@ def collect_companieshouse_file(filename):
 
 
 @timer
-def send_to_s3(filename, s3_url='s3://iqblade-data-services-companieshouse-fragments/'):
+def send_to_s3(filename,
+               s3_url=os.environ.get('S3_COMPANIES_HOUSE_FRAGMENTS_URL')):
+    # todo change s3_url to os.environ.get('s3_url') and set variables in azure and machine
     """sends a file to a given s3 bucket, default is iqblade-td"""
     s3_client = boto3.client('s3',
                              aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
@@ -119,8 +117,7 @@ def file_check_regex(cursor, db):
                 cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
                  VALUES (%s, %s)""", (file_to_download.replace('.zip', ''), fragment_count))
                 db.commit()
-
-                s3_url = f's3://iqblade-data-services-companieshouse-fragments/'
+                s3_url = os.environ.get('S3_COMPANIES_HOUSE_FRAGMENTS_URL') # todo os.environ change
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
                  for fragment in list_of_fragments]
 
