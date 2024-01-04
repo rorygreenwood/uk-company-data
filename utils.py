@@ -14,7 +14,7 @@ from filesplit.split import Split
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s [line:%(lineno)d] %(levelname)s: %(message)s')
+                    format='%(filename)s line:%(lineno)d %(message)s')
 
 
 def timer(func):
@@ -69,8 +69,8 @@ def mycode_traceback_levels(tb):
     return length
 
 
-__mycode = True
-sys.excepthook = handle_exception
+# __mycode = True
+# sys.excepthook = handle_exception
 
 
 def pipeline_message_wrap(func):
@@ -94,14 +94,14 @@ def pipeline_message_wrap(func):
             execution_time = end_time - start_time
             logger.info(
                 f"Function: '{function_name}' in script '{script_name}' of pipeline '{azure_pipeline_name}' took {execution_time} seconds")
-            pipeline_messenger(title=f'{function_name} in {script_name} of project {azure_pipeline_name} has passed!',
+            pipeline_messenger(title=f'{azure_pipeline_name}-{func.__name__}-{__file__} has passed!',
                                text=str(f'process took {execution_time} seconds'),
                                hexcolour_value='pass')
             print('this is a test')
         except Exception:
             result = None
             pipeline_messenger(
-                title=f'{func.__name__} in {__file__} of script {script_name} of pipeline {azure_pipeline_name} has failed',
+                title=f'{azure_pipeline_name}-{func.__name__}-{__file__} has failed',
                 text=str(traceback.format_exc()),
                 hexcolour_value='fail')
         return result

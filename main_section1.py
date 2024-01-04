@@ -11,8 +11,7 @@ import pandas as pd
 import requests
 import requests as r
 
-from main_funcs import connect_preprod
-from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap, logger
+from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap, logger, connect_preprod
 
 
 def custom_sort_key(file_path):
@@ -40,6 +39,7 @@ def collect_companieshouse_file(filename):
             chunkcount += 1
             fd.write(chunk)
             logger.info(chunkcount)
+    logger.info('collect_companies_house_file_complete')
     return filename
 
 
@@ -56,7 +56,7 @@ def send_to_s3(filename,
     s3_client.upload_file(filename, s3_url, filename)
 
 
-@pipeline_message_wrap
+# @pipeline_message_wrap
 @timer
 def file_check_regex(cursor, db):
     """use regex to find the specified companies house file, and then check that with a filetracker (tbd)
@@ -74,11 +74,12 @@ def file_check_regex(cursor, db):
         # logger.info(i['href'])
         file_str_match = re.findall(string=i['href'], pattern=chfile_re)
         # when checked, find out how if file is in filetracker
-        # if the re from file_str_match returns a resultult, it's length is larger than 1 and we can assume a file has been found.
+        # if the re from file_str_match returns a result, it's length is larger than 1 and we can assume a file has been found.
         # this filename needs to be checked against the companies house filetracker to see if it has already been processed
         # if it already has been processed, the script ends.
         # if not, download the file, fragment it, send the original file to the sftp and the fragments to the s3 bucket.
         if len(file_str_match) != 0:
+            print('regex returned a result')
             month_re = re.findall(string=file_str_match[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
             logger.info(f'monthcheck: {month_re[0]}')
             logger.info(f'file_str_match: {file_str_match[0]}')
@@ -111,13 +112,15 @@ def file_check_regex(cursor, db):
                 count_of_full_fragments = len(csv_files) - 1
                 fragment_count = count_of_full_fragments * 49999
 
-                final_file_df = pd.read_csv(f's3_fragments/{sorted_csv_files[-1]}')
+                final_file_df = pd.read_csv(f'file_downloader/files/fragments/{sorted_csv_files[-1]}')
                 fragment_count = fragment_count - len(final_file_df)
                 print(fragment_count, 'fragment count')
-                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
-                 VALUES (%s, %s)""", (file_to_download.replace('.zip', ''), fragment_count))
+                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount, file_month)
+                 VALUES (%s, %s, DATE_SUB(CURDATE(), INTERVAL DAYOFMONTH(CURDATE()) - 1 DAY))""", (file_to_download.replace('.zip', ''), fragment_count))
                 db.commit()
                 s3_url = os.environ.get('S3_COMPANIES_HOUSE_FRAGMENTS_URL') # todo os.environ change
+                logger.info(s3_url)
+                logger.info('moving fragments')
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
                  for fragment in list_of_fragments]
 
@@ -170,3 +173,4 @@ if __name__ == '__main__':
     logger.info(os.environ)
     cursor, db = connect_preprod()
     file_check_regex(cursor, db)
+
