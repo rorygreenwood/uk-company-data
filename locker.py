@@ -1,6 +1,3 @@
-import mysql.connector
-import os
-
 companies_house_file_data_types = {
     'company_name': str,
     'company_number': str,
@@ -212,52 +209,4 @@ companies_house_conversion_dict = {companies_house_file_csv_columns[i]: companie
 
 sic_code_conversion_dict = {sic_code_csv_columns[i]: sic_code_table_columns[i] for i in
                        range(len(sic_code_csv_columns))}
-
-org_del_query_list = [
-    """delete from organisation_filing_history where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from organisation_officer_appointment where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from organisation_merger_details where org_1_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' )
-or org_2_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""",
-    """delete from organisation_funding_details where funded_organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' ) or leading_organisation_id in
-                                         (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED' );""",
-    """delete from sic_code where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from geo_location where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from organisation_digital_maturity where organisation_id in (
-    select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED'
-    );""",
-    """delete from director where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from alias_name where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from isic_organisations_mapped where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from domain_alias where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');""",
-    """delete from tags where organisation_id in (select o.id from organisation o
-    inner join raw_companies_house_input_stage rchis on o.id = rchis.organisation_id
-    where rchis.reg_address_postcode is null and rchis.Accounts_AccountCategory = 'NO ACCOUNTS FILED');"""
-]
-
 

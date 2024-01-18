@@ -1,14 +1,13 @@
-import datetime
 import json
 import logging
 import os
 import subprocess
-import sys
 import time
 import traceback
 import zipfile
-import mysql.connector
+import datetime
 
+import mysql.connector
 import requests
 from filesplit.split import Split
 
@@ -22,7 +21,7 @@ def timer(func):
         t1 = time.time()
         var = func(*args, **kwargs)
         t2 = time.time() - t1
-        logger.info(f'{func.__name__} took {t2} seconds')
+        logger.info(f'function {func.__name__} took {t2} seconds')
         return var
 
     return wrapper
@@ -109,10 +108,8 @@ def pipeline_message_wrap(func):
     return pipeline_message_wrapper
 
 
-
-
 @timer
-def unzip_ch_file_s3_send(file_name, s3_url='s3://iqblade-data-services-tdsynnex-sftp/home/tdsynnex/'):
+def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
     """
     unzips a given filename into the output directory specified - and then sends zip file to s3 bucket
     :param s3_url:
@@ -123,21 +120,19 @@ def unzip_ch_file_s3_send(file_name, s3_url='s3://iqblade-data-services-tdsynnex
     output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
-    subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')
-    # os.remove(f'file_downloader/files/{file_name}')
+    subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')  # subprocess also removes file
     return file_name.replace('.zip', '.csv')
 
 
 @timer
-def unzip_ch_file(file_name):
+def unzip_ch_file(file_name, output_directory='file_downloader/files'):
     """
-    unzips a given filename into the output directory specified
-    :param s3_url:
+    unzips a given filename into the output directory specified, else it is file_downloader/files
+    :param output_directory:
     :param file_name:
     :return: file_name.replace('.zip', '.csv')
     """
     filepath = f'file_downloader/files/{file_name}'
-    output_directory = 'file_downloader/files'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
     return file_name.replace('.zip', '.csv')
@@ -148,7 +143,7 @@ def fragment_file(file_name: str, output_dir: str):
     """
     divides a given file into the given output_dir str variable,
     specifically fragments into lines of 49,999 with a header row
-    deletes the manifest file
+    deletes the manifest file - assumes output_dir str has a / at the end
     :param output_dir:
     :param file_name:
     :return:
@@ -158,31 +153,11 @@ def fragment_file(file_name: str, output_dir: str):
     os.remove(f'{output_dir}manifest')
 
 
-def checkcount_organisation_inserts(cursor):
-    cursor.execute("""select count(*) from raw_companies_house_input_stage""")
-    res = cursor.fetchall()
-    rchis_count = res[0][0]
-    print(rchis_count, ' rchis count')
-
-    cursor.execute(
-        """select count(*) from organisation where month(last_modified_date) = month(curdate()) and year(last_modified_date) = year(curdate())""")
-    res = cursor.fetchall()
-    organisation_count = res
-    print(organisation_count, ' organisation count')
-
-    # todo sic codes required a date_last_modified or equivalent
-    cursor.execute(
-        """select count(*) from sic_code where month(date_last_modified) = month(curdate()) and year(date_last_modified) = year(curdate())""")
-    res = cursor.fetchall()
-    sic_code_count = res
-    print(sic_code_count, ' sic_code count')
-
-    cursor.execute(
-        """select count(*) from geo_location where month(date_last_modified) = month(curdate()) and year(date_last_modified) = year(curdate())""")
-    res = cursor.fetchall()
-    geo_location_count = res
-    print(geo_location_count, ' geo_location count')
-
+@timer
+def run_query(sql, cursor, db):
+    """takes a sql query with no %s args, runs it, commits it"""
+    cursor.execute(sql)
+    db.commit()
 
 
 @timer
@@ -211,8 +186,19 @@ def connect_preprod_readonly():
     return cursor
 
 
+def find_previous_month(month, year):
+    """get the previous month of a given date,
+     if the month is janiary then the year needs to be changed as well"""
+
+    if month == 1:
+        previous_month = 12
+        previous_year = str(int(year) - 1)
+    else:
+        previous_month = str(int(month) - 1)
+        previous_year = year
+
+    return previous_month, previous_year
 
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()
-    checkcount_organisation_inserts(cursor=cursor)

@@ -1,7 +1,7 @@
 """
 functions that are used in the geo_location upserts
 """
-from utils import timer, logger
+from utils import timer, logger, connect_preprod
 
 
 @timer
@@ -46,6 +46,7 @@ def geolocation_md5_gen(cursor, db):
     set md5_key = MD5(CONCAT(organisation_id, reg_address_postcode)) where md5_key is null """)
     db.commit()
 
+
 @timer
 def geo_location_remove_old_head_offices(cursor, db):
     """
@@ -74,24 +75,49 @@ def geolocation_upsert(cursor, db):
     :param db:
     :return:
     """
-    logger.info('geolocation_insert_excess called')
-    cursor.execute("""insert ignore into geo_location
-        (address_1, address_2,
-         town, county,
-          post_code, area_location, country, address_type,
-           post_code_formatted, organisation_id, md5_key, date_last_modified, last_modified_by)
+    logger.info('geolocation_upsert called')
+    # this pulls an Integrity Error: 1452 - cannot add or update a child row, how to bypass?
+    # being review by Niall, sent 04/01/24
+    cursor.execute("""
+    insert into geo_location
+        (address_1,
+         address_2,
+         town,
+         county,
+         post_code,
+         area_location,
+         country,
+         address_type,
+         post_code_formatted,
+         organisation_id,
+         md5_key,
+         date_last_modified,
+         last_modified_by)
         select
-        reg_address_line1, reg_address_line2
-        , reg_address_posttown, reg_address_county,
-         reg_address_postcode, reg_address_county, 'UK', 'HEAD_OFFICE',
-          LOWER(REPLACE(reg_address_postcode, ' ', '')), CONCAT('UK', company_number),
-           md5(concat(rchis.organisation_id, reg_address_postcode)), curdate(), 'chp section 3 - geo_location_insert'
+        reg_address_line1,
+        reg_address_line2,
+        reg_address_posttown,
+        reg_address_county,
+        reg_address_postcode,
+        reg_address_county,
+        'UK',
+        'HEAD_OFFICE',
+        LOWER(REPLACE(reg_address_postcode, ' ', '')), -- postcode formatted
+        CONCAT('UK', company_number), -- organisation_id
+        md5(concat(rchis.organisation_id, reg_address_postcode)),  -- md5 key
+        curdate(), -- date_last_modified
+        'chp section 3 - geo_location_insert' -- last_modified_by
         from raw_companies_house_input_stage rchis
-        left join geo_location gl on gl.md5_key = rchis.md5_key
-        where gl.md5_key is null
-on duplicate key update 
-                     address_type = 'HEAD_OFFICE',
-                     last_modified_by = 'chp section3 geo_location_upsert',
-                     date_last_modified = CURDATE()
+
+        -- if a duplicate is found, ensure gl record is HEAD_OFFICE and lmb and dlm are updated for rowcounts
+        on duplicate key update
+        address_type = 'HEAD_OFFICE',
+        last_modified_by = 'chp section3 geo_location_upsert',
+        date_last_modified = CURDATE()
         """)
     db.commit()
+
+
+if __name__ == '__main__':
+    cursor, db = connect_preprod()
+    geolocation_upsert(cursor, db)

@@ -3,11 +3,9 @@ import os
 import sys
 
 import boto3
-from botocore.exceptions import ClientError
 
 from fragment_work import parse_fragment
-from main_funcs import connect_preprod
-from utils import pipeline_message_wrap, timer, handle_exception, logger
+from utils import pipeline_message_wrap, timer, handle_exception, logger, connect_preprod
 
 __mycode = True
 sys.excepthook = handle_exception
@@ -28,11 +26,11 @@ s3_client = boto3.client('s3',
 list_of_s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
 
 
-def get_row_count_of_s3_csv(path) -> int:
+def get_row_count_of_s3_csv(bucket_name, path):
     sql_stmt = """SELECT count(*) FROM s3object """
     req = boto3.client('s3').select_object_content(
         Bucket=bucket_name,
-        Key=path,
+        Key=path['Key'],
         ExpressionType="SQL",
         Expression=sql_stmt,
         InputSerialization={"CSV": {"FileHeaderInfo": "Use", "AllowQuotedRecordDelimiter": True}},
@@ -43,22 +41,35 @@ def get_row_count_of_s3_csv(path) -> int:
     return row_count
 
 
-rowcount_total = 0
-
-
-def find_bucket_count(rowcount_total):
+def find_bucket_count():
+    """
+    1. list all fragments in bucket
+    2. append size of bucket to rowcount
+    3. once all fragments have had their rowcount appended, write value into db
+    """
+    rowcount = 0
     for s3_object in list_of_s3_objects['Contents']:
-        print(s3_object['Key'])
-        try:
-            rowcount_total += get_row_count_of_s3_csv(path=s3_object['Key'])
-            print(rowcount_total)
-        except ClientError:
-            pass
+        rows = get_row_count_of_s3_csv(bucket_name=bucket_name, path=s3_object)
+        rowcount += rows
+        print(rowcount)
+    cursor.execute("""
+    update companies_house_rowcounts set file_rowcount = %s where 
+    month(file_month) = month(curdate()) and 
+    year(file_month) = year(curdate())
+    """, (rowcount,))
+    db.commit()
 
 
 @pipeline_message_wrap
 @timer
 def process_section2():
+    """
+    1. iterate over fragments found in s3 companies house bucket
+    2. use parse_fragment function on each fragment
+    3. remove fragment file from local files
+    4. remove fragment file from s3 bucket
+    :return:
+    """
     for s3_object in list_of_s3_objects['Contents']:
         # check if the file has already been processed in the past, if it has it will be in this table
         # if it is not in the table, then we can assume it has not been parsed and can continue to process it
@@ -83,6 +94,6 @@ def process_section2():
 
 
 if __name__ == '__main__':
+    find_bucket_count()
     process_section2()
-    find_bucket_count(rowcount_total)
-    print(rowcount_total, ' is total')
+
