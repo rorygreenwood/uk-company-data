@@ -77,7 +77,7 @@ def load_calculations_aggregates(cursor, db,
         t1.count as first_month_count,
         t2.count as second_month_count,
         (t2.count - t1.count) as diff,
-        100*(t2.count - t1.count)/t2.count as pct_change,
+        100*(t1.count - t2.count)/t2.count as pct_change,
         md5(concat(t1.Category, t1.file_date, t2.file_date)) as md5_str
     from (
         select Category, count, file_date
