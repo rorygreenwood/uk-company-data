@@ -1,5 +1,3 @@
-import datetime
-
 from main_funcs import *
 from section_3_geo_location_funcs import *
 from section_3_sic_code_funcs import *
@@ -20,7 +18,7 @@ def process_section3_geolocation(cursor, db):
 
 
 @timer
-def process_section3_siccode(cursor, db):
+def process_section3_siccode(cursor, db) -> None:
     # work in sic_code
     # previous_month = datetime.datetime.now() - datetime.timedelta(days=30)
     current_month = datetime.datetime.now().month
@@ -37,9 +35,12 @@ def process_section3_siccode(cursor, db):
     # calculate differences between sic code counts from the current month with counts from the previous month
     load_calculations(first_month=previous_month, second_month=current_month, cursor=cursor, db=db)
 
+    # calculate aggregate calculations
+    load_calculations_aggregates(cursor, db)
+
 
 @timer
-def process_section3_organisation(cursor, db):
+def process_section3_organisation(cursor, db) -> None:
     # adds organisation_id to the staging table rchis
     add_organisation_id(cursor, db)
 
@@ -55,7 +56,7 @@ def process_section3_organisation(cursor, db):
 
 @pipeline_message_wrap
 @timer
-def process_section3(cursor, db):
+def process_section3(cursor, db) -> None:
     # work in organisation table
     process_section3_organisation(cursor, db)
 
@@ -66,8 +67,7 @@ def process_section3(cursor, db):
     process_section3_geolocation(cursor, db)
 
 
-# todo check counts for sic_code and geo_location
-def retro_update_sic_code_analytics(cursor, db):
+def retro_update_sic_code_analytics(cursor, db) -> None:
     logger.info(f'reto_caller updated')
     years = ['2020', '2021', '2022', '2023', '2024']
     for year in years:
@@ -77,7 +77,7 @@ def retro_update_sic_code_analytics(cursor, db):
             load_calculations(current_month=i, current_year=year, cursor=cursor, db=db)
 
 
-def retro_update_sic_code_aggregates(cursor, db):
+def retro_update_sic_code_aggregates(cursor, db) -> None:
     logger.info(f'reto_caller updated')
     years = ['2020', '2021', '2022', '2023', '2024']
     for year in years:
@@ -89,8 +89,6 @@ def retro_update_sic_code_aggregates(cursor, db):
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()
-    # process_section3(cursor, db)
-    # cursor.execute("""update companies_house_filetracker set section3 = TRUE where filename = %s""", ('',))
-    # db.commit()
-    retro_update_sic_code_aggregates(cursor, db)
-    retro_update_sic_code_analytics(cursor, db)
+    process_section3(cursor, db)
+    cursor.execute("""update companies_house_filetracker set section3 = TRUE where filename = %s""", ('',))
+    db.commit()

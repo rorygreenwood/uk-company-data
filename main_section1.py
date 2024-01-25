@@ -3,7 +3,6 @@ import os
 import pathlib
 import re
 import subprocess
-import time
 
 import boto3
 import bs4
@@ -11,21 +10,23 @@ import pandas as pd
 import requests
 import requests as r
 
-from utils import timer, unzip_ch_file_s3_send, fragment_file,\
-    pipeline_message_wrap, logger, connect_preprod, get_rowcount_s3
+from utils import timer, unzip_ch_file_s3_send, fragment_file, \
+    logger, connect_preprod, get_rowcount_s3
 
 s3_client = boto3.client('s3',
                          aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
                          aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
                          region_name='eu-west-1'
                          )
+
+
 def custom_sort_key(file_path):
     """takes a csv fragment name and finds out what number fragment it is, the fragments will then be ordered by
     this value in order to find the final fragment which is assumed to not have 49,999 rows.
     """
     filename = file_path.name
     number = int(filename.split('_')[-1].replace('.csv', ''))
-    print(number)
+    logger.info(number)
     return number
 
 
@@ -83,7 +84,7 @@ def file_check_regex(cursor, db):
         # that file as a whole product, and then divided into smaller sections.
         file_str_match = re.findall(string=i['href'], pattern=chfile_regex_pattern)
         if len(file_str_match) != 0:
-            print('regex returned a result')
+            logger.info('regex returned a result')
             month_re = re.findall(string=file_str_match[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
             logger.info(f'monthcheck: {month_re[0]}')
             logger.info(f'file_str_match: {file_str_match[0]}')
@@ -125,7 +126,7 @@ def file_check_regex(cursor, db):
                 # we read the csv and get it's length
                 final_file_df = pd.read_csv(f'file_downloader/files/fragments/{sorted_csv_files[-1]}')
                 fragment_count = fragment_count - len(final_file_df)
-                print(fragment_count, 'fragment count')
+                logger.info('fragment count: {}'.format(fragment_count))
 
                 # insert rowcount into companies_house_rowcounts
                 cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
@@ -152,44 +153,8 @@ def file_check_regex(cursor, db):
                                (file_to_download, datetime.date.today()))
                 db.commit()
             else:
-                # ignore
                 pass
     logger.info('function complete')
-
-
-@timer
-def search_and_collect_ch_file(firstdateofmonth: datetime.date):
-    """
-    checks for presence of datestring on db and then page, downloads if the filestring does not exist in the table
-    :param firstdateofmonth:
-    :return: filename, firstdateofmonth
-    """
-    logger.info('search_and_collect_ch_file called')
-    initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
-    request = requests.get(initial_req_url, verify=False)
-    request_content = request.content
-    request_content_soup = bs4.BeautifulSoup(request_content, 'html.parser')
-    links = request_content_soup.find_all('a')
-
-    # check links on product page for the current date string from firstdateofmonth
-    year_month = firstdateofmonth.strftime('%Y-%m')
-    logger.info(year_month)
-    filename = ''
-    while filename == '':
-        for link in links:
-            logger.info(f'link in loop: {link}')
-            if year_month in link.text:
-                logger.info(f'new file found: {link.text}')
-                logger.info(link)
-                filename = link['href']
-                logger.info(f'filename: {filename}')
-                file_link = link['href']
-                logger.info(f'filelink: {file_link}')
-                filename = collect_companieshouse_file(file_link)
-                break
-        logger.info('filename is still none')
-        time.sleep(4)
-    # return filename, firstdateofmonth
 
 
 if __name__ == '__main__':

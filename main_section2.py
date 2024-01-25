@@ -40,7 +40,7 @@ def process_section2():
     4. remove fragment file from s3 bucket
     :return:
     """
-
+    file_date = ''
     monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
     for s3_object in list_of_s3_objects['Contents']:
         # check if the file has already been processed in the past, if it has it will be in this table

@@ -10,7 +10,7 @@ from utils import timer, logger, connect_preprod, find_previous_month
 
 
 @timer
-def sic_code_db_insert(cursor, db):
+def sic_code_db_insert(cursor, db) -> None:
     sic_code_columns = ['sic_text_1', 'sic_text_2', 'SICCode_SicText_3', 'SICCode_SicText_4']
     for column in sic_code_columns:
         logger.info(f'inserting {column}')
@@ -34,8 +34,7 @@ def sic_code_db_insert(cursor, db):
 @timer
 def load_calculations(cursor, db,
                       current_month=datetime.datetime.now().month,
-                      current_year=datetime.datetime.now().year):
-
+                      current_year=datetime.datetime.now().year) -> None:
     """sql query that takes two different months and calculates the difference between them"""
 
     # use current month and current year arg to find previous month and current/previous year
@@ -58,14 +57,13 @@ def load_calculations(cursor, db,
              select sic_code, sic_code_count, file_date from companies_house_sic_counts
              where month(file_date) = %s and year(file_date) = %s) t2
              on t1.sic_code = t2.sic_code
-             order by sic_code
-""", (previous_month, previous_year, current_month, current_year))
+             order by sic_code""", (previous_month, previous_year, current_month, current_year))
     db.commit()
 
 
 def load_calculations_aggregates(cursor, db,
                                  current_month=datetime.datetime.now().month,
-                                 current_year=datetime.datetime.now().year):
+                                 current_year=datetime.datetime.now().year) -> None:
     # use current month and current year arg to find previous month and current/previous year
     previous_month, previous_year = find_previous_month(month=current_month, year=current_year)
 
@@ -93,10 +91,17 @@ def load_calculations_aggregates(cursor, db,
     on t1.Category = t2.Category""",
                    (previous_month, previous_year, current_month, current_year))
     db.commit()
+    cursor.execute("""
+        update sic_code_aggregate_analytics scaa
+    inner join sic_code_categories scc
+    on scc.`SIC Code` = scaa.sic_code_category
+    set scaa.category_description = scc.Category_Description
+    where scaa.category_description is null""")
+    db.commit()
 
 
 @timer
-def insert_sic_counts(month, cursor, db):
+def insert_sic_counts(month, cursor, db) -> None:
     cursor.execute("""
     insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
     SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code
