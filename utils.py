@@ -6,6 +6,8 @@ import time
 import traceback
 import zipfile
 import datetime
+import boto3
+import re
 
 import mysql.connector
 import requests
@@ -14,6 +16,13 @@ from filesplit.split import Split
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
                     format='%(filename)s line:%(lineno)d %(message)s')
+
+constring = "mysql//{}:{}@{}:3306/{}".format(
+    os.environ.get('ADMINUSER'),
+    os.environ.get('ADMINPASS'),
+    os.environ.get('HOST'),
+    os.environ.get('DATABASE')
+)
 
 
 def timer(func):
@@ -139,7 +148,7 @@ def unzip_ch_file(file_name, output_directory='file_downloader/files'):
 
 
 @timer
-def fragment_file(file_name: str, output_dir: str):
+def fragment_file(file_name: str, output_dir: str = 'file_downloader/files/fragments/'):
     """
     divides a given file into the given output_dir str variable,
     specifically fragments into lines of 49,999 with a header row
@@ -186,6 +195,12 @@ def connect_preprod_readonly():
     return cursor
 
 
+# strip values of anything but numbers
+def remove_non_numeric(text):
+    pattern = r"\D+"
+    return re.sub(pattern, "", text)
+
+
 def find_previous_month(month, year):
     """get the previous month of a given date,
      if the month is janiary then the year needs to be changed as well"""
@@ -199,6 +214,41 @@ def find_previous_month(month, year):
 
     return previous_month, previous_year
 
+
+def get_row_count_of_s3_csv(bucket_name, path) -> int:
+    """
+    provide a count of rows in a specified companies house file in the s3 bucket.
+    :param bucket_name:
+    :param path:
+    :return:
+    """
+    sql_stmt = """SELECT count(*) FROM s3object """
+    req = boto3.client('s3').select_object_content(
+        Bucket=bucket_name,
+        Key=path['Key'],
+        ExpressionType="SQL",
+        Expression=sql_stmt,
+        InputSerialization={"CSV": {"FileHeaderInfo": "Use", "AllowQuotedRecordDelimiter": True}},
+        OutputSerialization={"CSV": {}},
+    )
+
+    row_count = next(int(x["Records"]["Payload"]) for x in req["Payload"])
+    return row_count
+
+
+def get_rowcount_s3(s3_client, bucket_name: str = '') -> int:
+    """
+    use get_row_count_of_s3_csv on the files in the fragments bucket to get a total rowcount in the companies house file
+    :return:
+    """
+    list_of_s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
+
+    rowcount = 0
+    for s3_object in list_of_s3_objects['Contents']:
+        rows = get_row_count_of_s3_csv(bucket_name=bucket_name, path=s3_object)
+        rowcount += rows
+        print(rowcount)
+    return rowcount
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()

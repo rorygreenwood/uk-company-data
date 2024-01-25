@@ -35,6 +35,7 @@ def sic_code_db_insert(cursor, db):
 def load_calculations(cursor, db,
                       current_month=datetime.datetime.now().month,
                       current_year=datetime.datetime.now().year):
+
     """sql query that takes two different months and calculates the difference between them"""
 
     # use current month and current year arg to find previous month and current/previous year
@@ -77,18 +78,18 @@ def load_calculations_aggregates(cursor, db,
         t1.count as first_month_count,
         t2.count as second_month_count,
         (t2.count - t1.count) as diff,
-        100*(t1.count - t2.count)/t2.count as pct_change,
+        100*(t2.count-t1.count)/t1.count as pct_change,
         md5(concat(t1.Category, t1.file_date, t2.file_date)) as md5_str
     from (
         select Category, count, file_date
         from companies_house_sic_code_aggregates
         where month(file_date) = %s and
-              year(file_date) = %s) t1
+              year(file_date) = %s and Category is not null and Category not in ('', '-')) t1
     inner join (
         select Category, count, file_date
         from companies_house_sic_code_aggregates
         where month(file_date) = %s and
-              year(file_date) = %s) t2
+              year(file_date) = %s and Category is not null and Category not in ('', '-')) t2
     on t1.Category = t2.Category""",
                    (previous_month, previous_year, current_month, current_year))
     db.commit()

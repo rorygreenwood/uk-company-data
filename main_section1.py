@@ -11,9 +11,14 @@ import pandas as pd
 import requests
 import requests as r
 
-from utils import timer, unzip_ch_file_s3_send, fragment_file, pipeline_message_wrap, logger, connect_preprod
+from utils import timer, unzip_ch_file_s3_send, fragment_file,\
+    pipeline_message_wrap, logger, connect_preprod, get_rowcount_s3
 
-
+s3_client = boto3.client('s3',
+                         aws_access_key_id=os.environ.get('HGDATA-S3-AWS-ACCESS-KEY-ID'),
+                         aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
+                         region_name='eu-west-1'
+                         )
 def custom_sort_key(file_path):
     """takes a csv fragment name and finds out what number fragment it is, the fragments will then be ordered by
     this value in order to find the final fragment which is assumed to not have 49,999 rows.
@@ -113,7 +118,6 @@ def file_check_regex(cursor, db):
 
                 # the majority of these fragments will be 49,999 rows long. There will be 1 fragment file that is not.
                 # there is also a fragments.txt file that needs to be ignored.
-                # todo replace this or have this result be paired against boto3 rowcounting once the fragments have been added to s3 bucket
                 count_of_full_fragments = len(csv_files) - 1
                 fragment_count = count_of_full_fragments * 49999
 
@@ -124,9 +128,8 @@ def file_check_regex(cursor, db):
                 print(fragment_count, 'fragment count')
 
                 # insert rowcount into companies_house_rowcounts
-                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount, file_month)
-                 VALUES (%s, %s, DATE_SUB(CURDATE(), INTERVAL DAYOFMONTH(CURDATE()) - 1 DAY))""",
-                               (file_to_download.replace('.zip', ''), fragment_count))
+                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
+                 VALUES (%s, %s)""", (file_to_download.replace('.zip', ''), fragment_count))
                 db.commit()
 
                 # send fragment files
@@ -135,6 +138,14 @@ def file_check_regex(cursor, db):
                 logger.info('moving fragments')
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
                  for fragment in list_of_fragments]
+
+                # once all the fragments are moved to s3, perform another count using the boto3 counter
+                s3_rowcount = get_rowcount_s3(s3_client=s3_client)
+                cursor.execute("""
+                update companies_house_rowcounts
+                 set bucket_rowcount = %s
+                 where filename = %s and bucket_rowcount is null
+                 """, (s3_rowcount, file_to_download.replace('.zip', '')))
 
                 # once processed, insert the filetrackers date and the current data
                 cursor.execute("""insert into companies_house_filetracker (filename, section1) VALUES (%s, %s)""",

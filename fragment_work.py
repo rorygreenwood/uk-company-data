@@ -1,11 +1,15 @@
 import datetime
 import time
 import os
+import re
+import hashlib
 
 import pandas as pd
 
 from locker import *
-from utils import timer, logger
+from utils import timer, logger, connect_preprod, remove_non_numeric
+
+cursor, db = connect_preprod()
 
 
 @timer
@@ -15,7 +19,7 @@ def parse_fragment(fragment: str,
                    user: str = os.environ.get('ADMINUSER'),
                    passwd: str = os.environ.get('ADMINPASS'),
                    db: str = os.environ.get('DATABASE')
-                   ):
+                   ) -> None:
     """
     takes a filepath of a fragment and preprod credentials
     turns fragment into dataframe, prepares and inserts
@@ -49,14 +53,12 @@ def parse_fragment(fragment: str,
     cursordb.commit()
 
     # send to staging
-    df_to_sql_t1 = time.time()
     df.to_sql(name='raw_companies_house_input_stage_df', con=constring, if_exists='append',
               index=False)
-    df.fillna(' ')
 
 
 @timer
-def parse_fragment_sic(fragment, user, passwd, host, constring_database, cursor, db):
+def _parse_fragment_sic(fragment):
     """
     REQUIRES CSV FRAGMENT
     rewrite into new stages
@@ -64,163 +66,107 @@ def parse_fragment_sic(fragment, user, passwd, host, constring_database, cursor,
     2. apply md5 of concat(sic_code, filepath)
     3. insert into final table (sic code, file path, count, md5)
     """
-    cursor.execute("""truncate companies_house_sic_pool""")
-    db.commit()
-    constring = f'mysql://{user}:{passwd}@{host}:3306/{constring_database}'
-    df = pd.read_csv(fragment, usecols=[' CompanyNumber', 'SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
+
+    # strip values of anything but numbers
+    def remove_non_numeric(text):
+        pattern = r"\D+"
+        return re.sub(pattern, "", text)
+
+    # regex of the fragment to get the file_date value
+    file_date = re.search(string=fragment, pattern='\d{4}-\d{2}-\d{2}')[0]
+
+    df = pd.read_csv(fragment, usecols=['SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
                                         'SICCode.SicText_4'])
     df.rename(columns=sic_code_conversion_dict, inplace=True)
-    df['FilePath'] = fragment + 'HISTORICAL'
-    df.to_sql(name='companies_house_sic_pool', con=constring, if_exists='append',
-              index=False)
-    logger.info(f'{fragment} inserted into sic_pool')
+    temp = []
 
-    logger.info(f'{fragment} substring_index called')
-    # remove the text from the sic codes so we are just left with numbers
-    cursor.execute("""update companies_house_sic_pool
-    set
-    SicText_1 = regexp_substr(SicText_1, '[0-9]+'),
-    SicText_2 = regexp_substr(SicText_2, '[0-9]+'),
-    SicText_3 = regexp_substr(SicText_3, '[0-9]+'),
-    SicText_4 = regexp_substr(SicText_4, '[0-9]+')
-    """)
-    db.commit()
+    # add all the sic_codes to a single column
+    for row in df.itertuples():
+        temp.append(row.SicText_1)
+        temp.append(row.SicText_2)
+        temp.append(row.SicText_3)
+        temp.append(row.SicText_4)
 
-    logger.info(f'{fragment} updating file_paths')
-    cursor.execute("""update companies_house_sic_pool
-     set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
-    """)
-    db.commit()
+    df = pd.DataFrame({'sic_code': temp,
+                       'file_date': file_date})
+    # remove all null values
+    df = df.dropna()
+    host = os.environ.get('HOST')
+    user = os.environ.get('ADMINUSER')
+    passwd = os.environ.get('ADMINPASS')
+    database = os.environ.get('DATABASE')
+    constring = f'mysql://{user}:{passwd}@{host}:3306/{database}'
 
-    # takes records from the sic pool as a fragment is upload to sic_pool
-    # writes them into staging 1
-    logger.info(f'{fragment} union insert into staging_1')
-    cursor.execute("""
-    insert into companies_house_sic_code_staging_1 (sic_code, sic_code_count, file_date)
-    select sic_code, sum(sic_count), FilePath from 
-        (select SicText_1 as sic_code, count(*) as sic_count, Filepath
-        from companies_house_sic_pool
-        where SicText_1 is not null
-        group by SicText_1, Filepath
-        union
-        select SicText_2, count(*), Filepath
-        from companies_house_sic_pool
-        where SicText_2 is not null
-        group by SicText_2, Filepath
-        union
-        select SicText_3, count(*), Filepath
-        from companies_house_sic_pool
-        where SicText_3 is not null
-        group by SicText_3, Filepath
-        union
-        select SicText_4, count(*), Filepath
-        from companies_house_sic_pool
-        where SicText_4 is not null
-        group by SicText_4, Filepath)
-         t1 group by sic_code
-     """)
-    db.commit()
-    cursor.execute("""truncate table companies_house_sic_pool""")
-    db.commit()
+    df['sic_code'] = df['sic_code'].apply(remove_non_numeric)
 
-    logger.info('applying md5 in staging_1')
-    # once in staging_1, they are given an md5
-    cursor.execute("""
-    update companies_house_sic_code_staging_1 
-    set md5_str = md5(concat(sic_code, file_date))
-    where md5_str is null""")
-    db.commit()
+    df_counts = df['sic_code'].value_counts()
+    df_counts = df_counts.to_frame(name='sic_code_count')
+    df_counts = df_counts.reset_index()
+    df_counts.columns = ['sic_code', 'sic_code_count']
+    df_counts['file_date'] = file_date
+
+    for i in range(len(df_counts)):
+        record = df_counts.iloc[i]
+        file_date_str = record['file_date']
+        col_all_str = record['sic_code']
+        md5_hash = hashlib.md5((file_date_str + col_all_str).encode('utf-8')).hexdigest()
+        df_counts.loc[i, 'md5_str'] = md5_hash
+
+    df_counts.to_sql(
+        name='companies_house_sic_code_staging_per_fragment',
+        con=constring,
+        if_exists='append',
+        index=False
+    )
+    cursor.execute("""select count(*) from companies_house_sic_code_staging_per_fragment""")
+    print('count in per_fragment table', cursor.fetchall())
 
     # inserted into second staging table, duplicate md5s are +='d together
-    # sic_code_staging_2 houses the counts for the CH file being processed at that time. Once complete, these will
+    # sic_code_staging_per_monthly_file houses the counts for the CH file being processed at that time. Once complete, these will
     # all be moved to the companies_house_counts
-    logger.info(f'inserting into staging_2')
-    cursor.execute("""insert into companies_house_sic_code_staging_2 (sic_code, file_date,  sic_code_count, md5_str)
-        select sic_code, file_date, sic_code_count, md5_str from companies_house_sic_code_staging_1 t2
+    logger.info(f'inserting into staging_per_monthly_file')
+    cursor.execute("""insert into companies_house_sic_code_staging_per_monthly_file (sic_code, file_date,  sic_code_count, md5_str)
+        select sic_code, file_date, sic_code_count, md5_str from companies_house_sic_code_staging_per_fragment t2
         on duplicate key update
-        companies_house_sic_code_staging_2.sic_code_count = companies_house_sic_code_staging_2.sic_code_count + t2.sic_code_count
+        companies_house_sic_code_staging_per_monthly_file.sic_code_count = companies_house_sic_code_staging_per_monthly_file.sic_code_count + t2.sic_code_count
         """)
     db.commit()
 
-    # truncate staging_1 as it is no longer required
-    cursor.execute("""truncate table companies_house_sic_code_staging_1""")
+    # truncate staging_per_fragment as it is no longer required
+    cursor.execute("""truncate table companies_house_sic_code_staging_per_fragment""")
     db.commit()
 
 
 @timer
-def section_3_sic_data_inserts(cursor, db):
-    logger.info('inserting into companies_house_sic_pool')
-    cursor.execute("""insert into companies_house_sic_pool (CompanyNumber, SicText_1, SicText_2, SicText_3, SicText_4, FilePath, md5_str) SELECT 
-        company_number, sic_text_1, sic_text_2, SICCode_SicText_3, SICCode_SicText_4, SourceFile, md5_key from raw_companies_house_input_stage
-        """)
-    db.commit()
+def parse_fragment_sic(fragment: str, file_date: str) -> pd.DataFrame:
 
-    # remove the text from the sic codes so we are just left with numbers
-    logger.info('beginning parse_rchis_sic datacleaning')
-    cursor.execute("""update companies_house_sic_pool
-    set
-    SicText_1 = regexp_substr(SicText_1, '[0-9]+'),
-    SicText_2 = regexp_substr(SicText_2, '[0-9]+'),
-    SicText_3 = regexp_substr(SicText_3, '[0-9]+'),
-    SicText_4 = regexp_substr(SicText_4, '[0-9]+')
-        """)
-    db.commit()
-    cursor.execute("""update companies_house_sic_pool
-         set FilePath = regexp_substr(FilePath, '[0-9]{4}-[0-9]{2}-[0-9]{2}', 1)
-        """)
-    db.commit()
-    # takes records from the sic pool as a fragment is upload to sic_pool
-    # writes them into staging
-    logger.info('writing into staging')
-    cursor.execute("""
-        insert into companies_house_sic_code_staging_1 (sic_code, sic_code_count, file_date)
-    select sic_code, sum(sic_count), FilePath from (select SicText_1 as sic_code, count(*) as sic_count, Filepath
-                                 from companies_house_sic_pool
-                                 where SicText_1 is not null
-                                 group by SicText_1, Filepath
-                                 union
-                                 select SicText_2, count(*), Filepath
-                                 from companies_house_sic_pool
-                                 where SicText_2 is not null
-                                 group by SicText_2, Filepath
-                                 union
-                                 select SicText_3, count(*), Filepath
-                                 from companies_house_sic_pool
-                                 where SicText_3 is not null
-                                 group by SicText_3, Filepath
-                                 union
-                                 select SicText_4, count(*), Filepath
-                                 from companies_house_sic_pool
-                                 where SicText_4 is not null
-                                 group by SicText_4, Filepath) t1 group by sic_code""")
-    db.commit()
-    # truncate sic_pool table as data no longer required
-    logger.info('truncating sic_pool')
-    cursor.execute("""truncate table companies_house_sic_pool""")
-    db.commit()
-    # once in staging_1, they are given an md5
-    logger.info('updating_md5 values')
-    cursor.execute("""
-        update companies_house_sic_code_staging_1 
-        set md5_str = md5(concat(sic_code, file_date))
-        where md5_str is null""")
-    db.commit()
-    # inserted into second staging table, where on a duplicate update the two
-    # counts for that sic code are added together
-    # sic_code_staging_2 houses the counts for the CH file being processed at that time. Once complete, these will
-    # all be moved to the companies_house
-    logger.info('inserting into sic_code_staging_2')
-    cursor.execute("""insert into companies_house_sic_code_staging_2 (sic_code, file_date,  sic_code_count, md5_str)
-            select sic_code, file_date, sic_code_count, md5_str from companies_house_sic_code_staging_1 t2
-            on duplicate key update
-            companies_house_sic_code_staging_2.sic_code_count = companies_house_sic_code_staging_2.sic_code_count + t2.sic_code_count
-            """)
-    db.commit()
-    # truncate staging_1 as it is no longer required
-    logger.info('truncating staging_1')
-    cursor.execute("""truncate table companies_house_sic_code_staging_1""")
-    db.commit()
-    # todo insert into sic_code_analytics
+    df = pd.read_csv(fragment, usecols=['SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
+                                        'SICCode.SicText_4'])
+
+    df.rename(columns=sic_code_conversion_dict, inplace=True)
+    temp = []
+
+    # monthly_df will be what each fragment dataframe feeds into, gradually increasing the size of the counts
+    # based on what
+
+    # add all the sic_codes to a single column
+    for row in df.itertuples():
+        temp.append(row.SicText_1)
+        temp.append(row.SicText_2)
+        temp.append(row.SicText_3)
+        temp.append(row.SicText_4)
+
+    df = pd.DataFrame({'sic_code': temp,
+                       'file_date': file_date})
+
+    # remove all null values
+    df = df.dropna()
+    df['sic_code'] = df['sic_code'].apply(remove_non_numeric)
+    df_counts = df['sic_code'].value_counts()
+    df_counts = df_counts.to_frame(name='sic_code_count')
+    df_counts = df_counts.reset_index()
+    df_counts.columns = ['sic_code', 'sic_code_count']
+    return df_counts
 
 
 @timer
