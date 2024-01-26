@@ -250,5 +250,6 @@ def get_rowcount_s3(s3_client, bucket_name: str = '') -> int:
         print(rowcount)
     return rowcount
 
+
 if __name__ == '__main__':
     cursor, db = connect_preprod()

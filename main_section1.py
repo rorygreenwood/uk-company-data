@@ -147,6 +147,7 @@ def file_check_regex(cursor, db):
                  set bucket_rowcount = %s
                  where filename = %s and bucket_rowcount is null
                  """, (s3_rowcount, file_to_download.replace('.zip', '')))
+                db.commit()
 
                 # once processed, insert the filetrackers date and the current data
                 cursor.execute("""insert into companies_house_filetracker (filename, section1) VALUES (%s, %s)""",
