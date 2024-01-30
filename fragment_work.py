@@ -56,10 +56,11 @@ def parse_fragment(fragment: str,
 
 @timer
 def parse_fragment_sic(fragment: str, file_date: str) -> pd.DataFrame:
-
     df = pd.read_csv(fragment, usecols=['SICCode.SicText_1', 'SICCode.SicText_2', 'SICCode.SicText_3',
-                                        'SICCode.SicText_4'])
-
+                                        'SICCode.SicText_4', 'CompanyStatus'])
+    # filter by company status, and then drop the column
+    df = df[df['CompanyStatus'].isin(['Active', 'Active - Proposal to Strike Off'])]
+    df.drop('CompanyStatus')
     df.rename(columns=sic_code_conversion_dict, inplace=True)
     temp = []
 
@@ -78,6 +79,9 @@ def parse_fragment_sic(fragment: str, file_date: str) -> pd.DataFrame:
 
     # remove all null values
     df = df.dropna()
+
+    # remove inactive companies
+
     df['sic_code'] = df['sic_code'].apply(remove_non_numeric)
     df_counts = df['sic_code'].value_counts()
     df_counts = df_counts.to_frame(name='sic_code_count')

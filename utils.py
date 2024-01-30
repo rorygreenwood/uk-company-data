@@ -17,7 +17,7 @@ logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
                     format='%(filename)s line:%(lineno)d %(message)s')
 
-constring = "mysql//{}:{}@{}:3306/{}".format(
+constring = "mysql://{}:{}@{}:3306/{}".format(
     os.environ.get('ADMINUSER'),
     os.environ.get('ADMINPASS'),
     os.environ.get('HOST'),

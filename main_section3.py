@@ -4,6 +4,27 @@ from section_3_sic_code_funcs import *
 from utils import pipeline_message_wrap, find_previous_month
 
 
+def check_for_section3_parsable() -> bool:
+    """
+    uses the filetracker to determine whether the latest file has been put through
+    section3.py
+    ideally we would have a way to determine which file needs to be put in, however we will
+    only have the current file on hand.
+    :return:
+    """
+    cursor.execute("""
+    select * from companies_house_filetracker
+     where
+      section3 is null and 
+      section2 is not null -- to ensure that section3 isn't performed before section 2
+    """)
+    res = cursor.fetchall()
+    if len(res) != 0:
+        return True
+    else:
+        return False
+
+
 @timer
 def process_section3_geolocation(cursor, db):
     # work in geolocation
@@ -20,6 +41,7 @@ def process_section3_geolocation(cursor, db):
 @timer
 def process_section3_siccode(cursor, db) -> None:
     # work in sic_code
+
     # previous_month = datetime.datetime.now() - datetime.timedelta(days=30)
     current_month = datetime.datetime.now().month
     current_year = datetime.datetime.now().year
@@ -33,7 +55,7 @@ def process_section3_siccode(cursor, db) -> None:
     insert_sic_counts(month=datetime.date.today().month, cursor=cursor, db=db)
 
     # calculate differences between sic code counts from the current month with counts from the previous month
-    load_calculations(first_month=previous_month, second_month=current_month, cursor=cursor, db=db)
+    load_calculations(current_month=current_month, current_year=current_year, cursor=cursor, db=db)
 
     # calculate aggregate calculations
     load_calculations_aggregates(cursor, db)
@@ -57,6 +79,8 @@ def process_section3_organisation(cursor, db) -> None:
 @pipeline_message_wrap
 @timer
 def process_section3(cursor, db) -> None:
+    # todo check that there is a section3 file that needs to be handled
+
     # work in organisation table
     process_section3_organisation(cursor, db)
 
@@ -89,6 +113,11 @@ def retro_update_sic_code_aggregates(cursor, db) -> None:
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()
-    process_section3(cursor, db)
-    cursor.execute("""update companies_house_filetracker set section3 = TRUE where filename = %s""", ('',))
-    db.commit()
+    bool_check = check_for_section3_parsable()
+    if bool_check:
+        process_section3(cursor, db)
+        cursor.execute("""update companies_house_filetracker set section3 = TRUE where filename = %s""", ('',))
+        db.commit()
+    else:
+        logger.info('no section 3 required')
+        quit()
