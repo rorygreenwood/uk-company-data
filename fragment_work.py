@@ -60,7 +60,7 @@ def parse_fragment_sic(fragment: str, file_date: str) -> pd.DataFrame:
                                         'SICCode.SicText_4', 'CompanyStatus'])
     # filter by company status, and then drop the column
     df = df[df['CompanyStatus'].isin(['Active', 'Active - Proposal to Strike Off'])]
-    df.drop('CompanyStatus')
+    df = df.drop('CompanyStatus', axis=1)
     df.rename(columns=sic_code_conversion_dict, inplace=True)
     temp = []
 

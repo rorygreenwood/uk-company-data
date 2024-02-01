@@ -30,7 +30,7 @@ s3_client = boto3.client('s3',
 list_of_s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
 
 
-@pipeline_message_wrap
+# @pipeline_message_wrap
 @timer
 def process_section2():
     """

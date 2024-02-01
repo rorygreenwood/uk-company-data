@@ -46,7 +46,8 @@ def collect_companieshouse_file(filename: str):
         for chunk in req.iter_content(chunk_size=100000):
             chunkcount += 1
             fd.write(chunk)
-            logger.info(chunkcount)
+            if chunkcount % 100 == 0:
+                logger.info(chunkcount)
     logger.info('collect_companies_house_file_complete')
     return filename
 
