@@ -1,17 +1,17 @@
 import json
 import logging
 import os
+import re
 import subprocess
 import time
 import traceback
 import zipfile
-import datetime
-import boto3
-import re
 
+import boto3
 import mysql.connector
 import requests
 from filesplit.split import Split
+from rich.logging import RichHandler
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
@@ -117,24 +117,12 @@ def pipeline_message_wrap(func):
     return pipeline_message_wrapper
 
 
-@timer
-def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
-    """
-    unzips a given filename into the output directory specified - and then sends zip file to s3 bucket
-    :param s3_url:
-    :param file_name:
-    :return: file_name.replace('.zip', '.csv')
-    """
-    filepath = f'file_downloader/files/{file_name}'
-    output_directory = 'file_downloader/files'
-    with zipfile.ZipFile(filepath, 'r') as zip_ref:
-        zip_ref.extractall(output_directory)
-    subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')  # subprocess also removes file
-    return file_name.replace('.zip', '.csv')
+
 
 
 def ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
     subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')
+
 
 @timer
 def unzip_ch_file(file_name, output_directory='file_downloader/files'):
@@ -254,5 +242,16 @@ def get_rowcount_s3(s3_client, bucket_name: str = '') -> int:
     return rowcount
 
 
+def rich_logger():
+    logging.basicConfig(
+        level="NOTSET",
+        format="%(message)s",
+        datefmt="[%X]",
+        handlers=[RichHandler(rich_tracebacks=True)]
+    )
+    log = logging.getLogger("rich")
+    return log
+
+
 if __name__ == '__main__':
-    cursor, db = connect_preprod()
+    ch_file_s3_send(file_name='file_downloader/files/BasicCompanyDataAsOneFile-2024-02-07.zip')

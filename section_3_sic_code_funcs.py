@@ -15,7 +15,7 @@ def sic_code_db_insert(cursor, db) -> None:
     for column in sic_code_columns:
         logger.info(f'inserting {column}')
         sql_insert_query = f"""
-        insert into sic_code
+        insert ignore into sic_code
          (code, organisation_id, company_number, md5, date_last_modified)
         select 
         regexp_substr({column}, '[0-9]+'), 
@@ -101,7 +101,7 @@ def load_calculations_aggregates(cursor, db,
 
 
 @timer
-def insert_sic_counts(month, cursor, db) -> None:
+def _insert_sic_counts(month, cursor, db) -> None:
     cursor.execute("""
     insert ignore into companies_house_sic_counts (sic_code, file_date, sic_code_count, md5_str) 
     SELECT code, %s, count(*), md5(concat(code, %s))  from sic_code

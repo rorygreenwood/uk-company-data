@@ -8,7 +8,7 @@ import boto3
 import pandas as pd
 
 from fragment_work import parse_fragment, parse_fragment_sic
-from utils import pipeline_message_wrap, timer, handle_exception, \
+from utils import timer, handle_exception, \
     logger, connect_preprod, constring
 
 __mycode = True
@@ -29,19 +29,26 @@ s3_client = boto3.client('s3',
                          )
 list_of_s3_objects = s3_client.list_objects_v2(Bucket=bucket_name, Prefix="", Delimiter="/")
 
+global file_date
+
 
 # @pipeline_message_wrap
 @timer
 def process_section2():
     """
-    1. iterate over fragments found in s3 companies house bucket
-    2. use parse_fragment function on each fragment
-    3. remove fragment file from local files
-    4. remove fragment file from s3 bucket
+    1. list fragments found in s3 bucket
+    2a. for each fragment, call parse_fragment() function to upsert to iqblade.raw_companies_house_input_staging
+    2b. for each fragment, call parse_fragment_sic() to contribute to pandas dataframe monthly_df
+    2c. remove file from local and s3 bucket
+    3. concat monthly_df into a single dataframe based on sic_code and use dataframe.to_sql() to send it to
+        companies_house_sic_code_counts
+    4. take companies_house_sic_code_counts data and add it into aggregates
     :return:
     """
-    file_date = ''
+
+    global file_date
     monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
+    # 1. list fragments found in s3 bucket
     for s3_object in list_of_s3_objects['Contents']:
         # check if the file has already been processed in the past, if it has it will be in this table
         # if it is not in the table, then we can assume it has not been parsed and can continue to process it
@@ -53,35 +60,33 @@ def process_section2():
             s3_client.download_file(bucket_name, fragment_file_name,
                                     f'file_downloader/files/fragments\\{fragment_file_name}')
             logger.info('parsing {}'.format(fragment_file_name))
+            fragment = 'file_downloader/files/fragments/{}'.format(fragment_file_name)
 
-            # takes the fragment and parses to
+            # 2a. for each fragment, call parse_fragment() function to upsert to iqblade.raw_companies_house_input_staging
             parse_fragment(fragment_file_path,
                            host=host, user=user, passwd=passwd,
                            db=database, cursor=cursor, cursordb=db)
 
-            fragment = 'file_downloader/files/sic_fragments/{}'.format(fragment_file_name)
-
+            # 2b. for each fragment, call parse_fragment_sic() to contribute to pandas dataframe monthly_df
             # regex of the fragment to get the file_date value
             file_date = re.search(string=fragment, pattern='\d{4}-\d{2}-\d{2,3}')[0]
-
-            df_counts = parse_fragment_sic(fragment)
-
-            # df_counts could be returned from a function?
+            df_counts = parse_fragment_sic(fragment, file_date)
             monthly_df = pd.concat([monthly_df, df_counts], axis=0)
 
+            # 2c. remove file from local and s3 bucket
             os.remove(f'file_downloader/files/fragments/{fragment_file_name}')
             s3_client.delete_object(Bucket=bucket_name, Key=fragment_file_name)
         else:
             pass
 
-    # once complete, monthly_df needs to be squashed and then sent to companies_house_sic_counts
+    # 3. concat monthly_df into a single dataframe based on sic_code and use dataframe.to_sql() to send it to
+    # companies_house_sic_code_counts
     grouped_df = monthly_df.groupby('sic_code')
     sic_count = grouped_df['sic_code_count'].sum()
     sic_code_index = grouped_df.groups.keys()
     df2 = pd.DataFrame({'sic_code': sic_code_index, 'sic_code_count': sic_count})
     df2['file_date'] = file_date
     df2['md5_str'] = ''
-
     # apply md5
     for idx, row in df2.iterrows():
         row.loc['md5_str'] = hashlib.md5((file_date + row.loc['sic_code']).encode('utf-8')).hexdigest()
@@ -102,8 +107,7 @@ def process_section2():
     """)
     db.commit()
 
-    # insert sic count data in companies_house_sic_counts into sic_code_aggregates
-    # for this month
+    # 4. take companies_house_sic_code_counts data and add it into aggregates
     cursor.execute("""insert into companies_house_sic_code_aggregates
                         (file_date, Category, count, md5_str)
                         select file_date, sic_code_category, sum(sic_code_count), md5(concat(file_date, sic_code_category))
@@ -113,9 +117,9 @@ def process_section2():
                         group by file_date, sic_code_category""", (file_date,))
     db.commit()
 
-    # once complete, update filetracker
+    # once complete, update iqblade.comapnies_house_filetracker and set section_2 value to curdate
     cursor.execute("""update companies_house_filetracker
-     set section2 = true where filename = %s and section2 is null""", ('',))
+     set section2 = DATE(CURDATE()) where filename = %s and section2 is null""", (file_date,))
 
 
 if __name__ == '__main__':

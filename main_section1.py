@@ -9,8 +9,9 @@ import bs4
 import pandas as pd
 import requests
 import requests as r
+import zipfile
 
-from utils import timer, unzip_ch_file_s3_send, fragment_file, \
+from utils import timer, fragment_file, \
     logger, connect_preprod, get_rowcount_s3
 
 s3_client = boto3.client('s3',
@@ -18,6 +19,22 @@ s3_client = boto3.client('s3',
                          aws_secret_access_key=os.environ.get('HGDATA-S3-AWS-SECRET-KEY'),
                          region_name='eu-west-1'
                          )
+
+
+@timer
+def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
+    """
+    unzips a given filename into the output directory specified - and then sends zip file to s3 bucket
+    :param s3_url:
+    :param file_name:
+    :return: file_name.replace('.zip', '.csv')
+    """
+    filepath = f'file_downloader/files/{file_name}'
+    output_directory = 'file_downloader/files'
+    with zipfile.ZipFile(filepath, 'r') as zip_ref:
+        zip_ref.extractall(output_directory)
+    subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')  # subprocess also removes file
+    return file_name.replace('.zip', '.csv')
 
 
 def custom_sort_key(file_path):
@@ -66,23 +83,35 @@ def send_to_s3(filename,
 
 # @pipeline_message_wrap
 @timer
-def file_check_regex(cursor, db):
-    """use regex to find the specified companies house file, and then check if that filename
-    exists in iqblade.companies_house_filetracker.
-    if the file does not exist in the table, the file is downloaded.
+def process_section_1(cursor, db):
     """
-    chfile_regex_pattern = 'BasicCompanyDataAsOneFile-[0-9]{4}-[0-9]{2}-[0-9]{2}\.zip'
+    1. Send a request to companies house downloads
+    2. collect all links and search them for specified string (chfile_regex_pattern)
+    3. compare the string to those found in mysql table iqblade.companies_house_filetracker
+    4a. if there is a string that matches, we assume the file has been processed through section 1 and
+        close the pipeline
+    4b. if there is no match, we download the file
+    5a. unzip the file, and send the .zip file to an incoming-file
+    5b. copy the file to the td-synnex bucket
+    6. split the file into 'fragment' files of 50,000 lines each
+    7a. calculate how many rows are found in the files and send that record to iqblade.companies_house_rowcounts
+    7b. send the each fragment file to AWS s3
+    7c. calculate how many rows in the fragment files in s3
+    8. update iqblade.companies_house_filetracker with new filename, and then that the section1 has been complete
+    """
+
+    # 1. Send a Request to companies house downloads
     logger.info('search called')
     initial_req_url = 'http://download.companieshouse.gov.uk/en_output.html'
     r = requests.get(initial_req_url, verify=False)
     r_content = r.content
     request_content_soup = bs4.BeautifulSoup(r_content, 'html.parser')
+
+    # 2. collect all links and search them for specified string (chfile_regex_pattenr)
     links = request_content_soup.find_all('a')
     logger.info(links)
+    chfile_regex_pattern = 'BasicCompanyDataAsOneFile-[0-9]{4}-[0-9]{2}-[0-9]{2}\.zip'
     for i in links:
-        # finds all the links on the companies house page that match the regex
-        # all the files that appear on the webpage will be of the same monthly file, but they have
-        # that file as a whole product, and then divided into smaller sections.
         file_str_match = re.findall(string=i['href'], pattern=chfile_regex_pattern)
         if len(file_str_match) != 0:
             logger.info('regex returned a result')
@@ -90,20 +119,22 @@ def file_check_regex(cursor, db):
             logger.info(f'monthcheck: {month_re[0]}')
             logger.info(f'file_str_match: {file_str_match[0]}')
 
-            # check if the regex matched filestring already exists in companies house
+            # 3. compare the string to those found in mysql table iqblade.companies_house_filetracker
             cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
                            (file_str_match[0],))
             result = cursor.fetchall()
             logger.info(result)
 
-            # if length of cursor.fetchall() is zero, we assume the file hasn't been downloaded
+            # 4a. if there is a string that matches, we assume the file has been processed through section 1 and
+            #    close the pipeline
             if len(result) == 0:
                 # download file
                 logger.info('file found to download')
                 file_to_download = file_str_match[0]
+                # 4b. if there is no match, we download the file
                 collect_companieshouse_file(filename=file_to_download)
 
-                # unzip file and send .zip to s3
+                # 5a. unzip file and send .zip to s3
                 unzipped_file = unzip_ch_file_s3_send(f'{file_to_download}')
 
                 # fragment file
@@ -113,13 +144,10 @@ def file_check_regex(cursor, db):
                 # move fragments to s3 bucket
                 list_of_fragments = os.listdir('file_downloader/files/fragments/')
 
-                # calculate number of rows in file, and then
+                # 7a. calculate number of rows in file, and then send the number to iqblade.companies_house_rowcounts
                 path_objects = [pathlib.Path(f) for f in list_of_fragments]
                 csv_files = list(filter(lambda path: path.suffix == '.csv', path_objects))
                 sorted_csv_files = sorted(csv_files, key=custom_sort_key)
-
-                # the majority of these fragments will be 49,999 rows long. There will be 1 fragment file that is not.
-                # there is also a fragments.txt file that needs to be ignored.
                 count_of_full_fragments = len(csv_files) - 1
                 fragment_count = count_of_full_fragments * 49999
 
@@ -129,28 +157,23 @@ def file_check_regex(cursor, db):
                 fragment_count = fragment_count - len(final_file_df)
                 logger.info('fragment count: {}'.format(fragment_count))
 
-                # insert rowcount into companies_house_rowcounts
-                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount)
-                 VALUES (%s, %s)""", (file_to_download.replace('.zip', ''), fragment_count))
-                db.commit()
-
-                # send fragment files
+                # 7b. send the each fragment file to AWS s3
                 s3_url = os.environ.get('S3_COMPANIES_HOUSE_FRAGMENTS_URL')
                 logger.info(s3_url)
                 logger.info('moving fragments')
                 [subprocess.run(f'aws s3 mv {os.path.abspath(f"file_downloader/files/fragments/{fragment}")} {s3_url}')
                  for fragment in list_of_fragments]
 
-                # once all the fragments are moved to s3, perform another count using the boto3 counter
-                s3_rowcount = get_rowcount_s3(s3_client=s3_client)
-                cursor.execute("""
-                update companies_house_rowcounts
-                 set bucket_rowcount = %s
-                 where filename = %s and bucket_rowcount is null
-                 """, (s3_rowcount, file_to_download.replace('.zip', '')))
+                # 7c. calculate how many rows in the fragment files in s3
+                s3_rowcount = get_rowcount_s3(s3_client=s3_client,
+                                              bucket_name='iqblade-data-services-companieshouse-fragments')
+
+                # insert rowcount into companies_house_rowcounts
+                cursor.execute("""insert into companies_house_rowcounts (filename, file_rowcount, bucket_rowcount)
+                 VALUES (%s, %s, %s)""", (file_to_download.replace('.zip', ''), fragment_count, s3_rowcount))
                 db.commit()
 
-                # once processed, insert the filetrackers date and the current data
+                # 8. update iqblade.companies_house_filetracker with new filename, and then that the section1 has been complete
                 cursor.execute("""insert into companies_house_filetracker (filename, section1) VALUES (%s, %s)""",
                                (file_to_download, datetime.date.today()))
                 db.commit()
@@ -162,4 +185,4 @@ def file_check_regex(cursor, db):
 if __name__ == '__main__':
     logger.info(os.environ)
     cursor, db = connect_preprod()
-    file_check_regex(cursor, db)
+    process_section_1(cursor, db)

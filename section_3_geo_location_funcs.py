@@ -10,6 +10,7 @@ def find_more_postcodes(cursor, db):
         mysql query that finds companies house records without a value in their postcode column
     uses a regexp_substr function to find a postcode in a concat of the rest of the address. Sometimes
     the postcode can be found in there. If found, update the record with the new postcode
+    # todo can this be done in pandas in section1?
     :param cursor:
     :param db:
     :return:
