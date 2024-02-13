@@ -23,7 +23,7 @@ def check_for_section3_parsable() -> bool:
     else:
         return False
 
-
+@timer
 def add_counties(cursor, db):
     """
     joins rchis data with postcode data
