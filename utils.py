@@ -117,9 +117,6 @@ def pipeline_message_wrap(func):
     return pipeline_message_wrapper
 
 
-
-
-
 def ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
     subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')
 

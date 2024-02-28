@@ -23,6 +23,7 @@ def check_for_section3_parsable() -> bool:
     else:
         return False
 
+
 @timer
 def add_counties(cursor, db):
     """
@@ -36,21 +37,21 @@ def add_counties(cursor, db):
     """
     # step 1:
     cursor.execute("""
-insert into rchis_new_counties_to_update
-select distinct
-    rchis.organisation_id,
-    pcms.County as new_county
-from raw_companies_house_input_stage rchis
-inner join post_code_mappings_staging pcms
-on replace(rchis.reg_address_postcode, ' ', '') = replace(pcms.Postcode, ' ', '')
-where rchis.reg_address_county is null and pcms.County is not null and reg_address_postcode <> ''""")
+        insert into rchis_new_counties_to_update
+        select distinct
+            rchis.organisation_id,
+            pcms.County as new_county
+        from raw_companies_house_input_stage rchis
+        inner join post_code_mappings_staging pcms
+        on replace(rchis.reg_address_postcode, ' ', '') = replace(pcms.Postcode, ' ', '')
+        where rchis.reg_address_county is null and pcms.County is not null and reg_address_postcode <> ''""")
     db.commit()
 
     # step 2:
     cursor.execute("""
-    update raw_companies_house_input_stage rchis
-inner join rchis_new_counties_to_update rnctu on rchis.organisation_id = rnctu.organisation_id
-set rchis.reg_address_county = new_county where reg_address_county is null
+        update raw_companies_house_input_stage rchis
+        inner join rchis_new_counties_to_update rnctu on rchis.organisation_id = rnctu.organisation_id
+        set rchis.reg_address_county = new_county where reg_address_county is null
     """)
     db.commit()
 
@@ -120,6 +121,16 @@ def process_section3_organisation(cursor, db) -> None:
                         last_modified_date = CURDATE()
                          where o.company_name <> rchis.company_name and o.company_number = rchis.company_number""")
     db.commit()
+
+    # insert any new companies in as well
+    cursor.execute("""insert into organisation (id, company_number, company_name, company_status, date_formed, last_modified_date,
+    last_modified_by)
+    select organisation_id, company_number, company_name, company_status, STR_TO_DATE(IncorporationDate, '%d/%m/%Y'), curdate(), 'ch3 upsert statement - Rory'
+     from raw_companies_house_input_stage on duplicate key update
+     last_modified_date = curdate(), last_modified_by='ch3 upsert statement - Rory'
+    """)
+    db.commit()
+
 
 @pipeline_message_wrap
 @timer
