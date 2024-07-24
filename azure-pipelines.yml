@@ -1,0 +1,60 @@
+trigger:
+- master
+variables:
+- group: aws-access-credentials
+- group: preprod-connection-group
+- name: serviceToPush
+  value: 'companies-house-pipeline' # change this dependent on what the ecr repo is to be called
+pool:
+  vmImage: 'ubuntu-latest'
+jobs:
+- job: ConfigureAWSCredentials
+  steps:
+    - script: |
+        sudo pip3 install setuptools
+        sudo pip3 install --upgrade awscli
+      displayName: Install dependencies
+    - script: |
+        mkdir .aws
+        echo "[default]\naws_access_key_id=$(AWS_ACCESS_KEY_ID)\naws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" > ~/.aws/credentials
+        aws configure set region $(AWS_REGION)
+        $(aws ecr get-login --no-include-email)
+      displayName: Signing into AWS ECR
+- job: BuildAndPushDockerimage
+  dependsOn: ConfigureAWSCredentials
+  steps:
+    - checkout: self
+    - script: |
+        export aws-access-key-id=$(AWS_ACCESS_KEY_ID)
+        export aws-secret-key=$(AWS_SECRET_ACCESS_KEY)
+        export eu-west-1=$(AWS_REGION)
+        export preprod-host=$(DB_HOST)
+        export preprod-admin-user=$(DB_USERNAME)
+        export preprod-admin-pass=$(DB_PASSWORD)
+        export preprod-database=$(DB_DATABASE)
+      displayName: 'Adding environment variables for AWS'
+    - task: Docker@2
+      displayName: 'Building the pipeline-companies-house image'
+      inputs:
+        repository: $(serviceToPush)
+        command: 'build'
+        Dockerfile: './Dockerfile'
+        arguments: |
+          --build-arg AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) 
+          --build-arg AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) 
+          --build-arg AWS_REGION=$(AWS_REGION)  
+          --build-arg DB_HOST=$(DB_HOST) 
+          --build-arg DB_USERNAME=$(DB_USERNAME) 
+          --build-arg DB_PASSWORD=$(DB_PASSWORD) 
+          --build-arg prepod-database=$(PREPROD_DATABASE)
+        buildContext: .
+        tags: |
+          latest
+          $(Build.BuildId)
+    - script: docker image ls
+      displayName: 'Listing Docker containers for debug'
+    - task: ECRPushImage@1
+      displayName: 'Pushing $(serviceToPush):latest to ECR'
+      inputs:
+        sourceImageName: $(serviceToPush)
+        repositoryName: $(serviceToPush)
