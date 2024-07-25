@@ -10,7 +10,6 @@ pool:
 jobs:
 - job: ConfigureAWSCredentials
   steps:
-    - # needs to be AWS_DEFAULT_REGION, AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
     - script: |
         sudo pip3 install setuptools
         sudo pip3 install --upgrade awscli
