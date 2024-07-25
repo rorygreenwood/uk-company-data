@@ -36,8 +36,9 @@ jobs:
         export AWS_REGION=$(AWS_REGION)
       displayName: 'Adding environment variables for AWS'
     - script: |
-        export preprod-admin-user=$(preprod-connection-group.preprod-admin-user)
-    - script: echo added new variable from $(preprod-connection-group.preprod-admin-user)
+        export preprod-admin-user=$(preprod-admin-user)
+      displayName: 'adding new variable for admin suer'
+    - script: echo added new variable from $(preprod-admin-user)
       displayName: 'adding new variable'
     - task: Docker@2
       displayName: 'Building the companies-house-container image'
