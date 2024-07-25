@@ -16,6 +16,9 @@ ARG aws-secret-key-data-services
 ARG aws-region
 ARG aws-tdsynnex-sftp-bucket-url
 
+ARG aws-access-key-id-original-tenant
+ARG aws-secret-key-original-tenant
+
 ARG preprod-admin-user
 ARG preprod-admin-pass
 ARG preprod-database
@@ -27,6 +30,10 @@ ENV aws-access-key-id-data-services=$(aws-access-key-id-data-services)
 ENV aws-secret-key-data-services=$(aws-secret-key-data-services)
 ENV aws-region=$(aws-region)
 ENV aws-tdsynnex-sftp-bucket-url=$(aws-tdsynnex-sftp-bucket-url)
+
+ENV aws-access-key-id-original-tenant=$(aws-access-key-id-original-tenant)
+ENV aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
+
 
 ENV preprod-admin-user=$(preprod-admin-user)
 ENV preprod-admin-pass=$(preprod-admin-pass)

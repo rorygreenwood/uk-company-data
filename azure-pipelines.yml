@@ -25,13 +25,19 @@ jobs:
   steps:
     - checkout: self
     - script: |
+        
         export aws-access-key-id-data-services=$(aws-access-key-id-data-services)
         export aws-secret-key=$(aws-secret-key-data-services)
+        
+        export aws-access-key-id-original-tenant=$(aws-access-key-id-original-tenant)
+        export aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
+        
         export aws-region=$(aws-region)
         export preprod-host=$(preprod-host)
         export preprod-admin-user=$(preprod-admin-user) 
         export preprod-admin-pass=$(preprod-admin-pass)
         export preprod-database=$(preprod-database)
+
       displayName: 'Adding environment variables for AWS'
     - task: Docker@2
       displayName: 'Building the pipeline-companies-house image'
@@ -44,6 +50,10 @@ jobs:
           --build-arg aws-access-key-id=$(aws-access-key-id) 
           --build-arg aws-secret-key=$(aws-secret-key) 
           --build-arg aws-region=$(aws-region)
+          
+          --build-arg aws-access-key-id-original-tenant=$(aws-access-key-id-original-tenant)
+          --build-arg aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
+          
           --build-arg preprod-host=$(preprod-host) 
           --build-arg preprod-admin-user=$(preprod-admin-user) 
           --build-arg preprod-admin-pass=$(preprod-admin-pass) 
