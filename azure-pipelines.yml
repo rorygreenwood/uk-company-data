@@ -19,10 +19,12 @@ jobs:
       displayName: Install dependencies
     - script: |
         mkdir .aws
-        echo "[default]\naws_access_key_id=$(AWS_ACCESS_KEY_ID)\naws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" > ~/.aws/credentials
-        aws configure set region $(AWS_REGION)
+        echo "[default]\naws_access_key_id=$(aws-access-key-id-original-tenant)\naws_secret_access_key=$(aws-secret-key-original-tenant)" > ~/.aws/credentials
+        aws configure set region $(aws-region)
         $(aws ecr get-login --no-include-email)
       displayName: Signing into AWS ECR
+    - script: echo file complete!
+      displayName: Confirmation of AWS Credentials
 - job: BuildAndPushDockerimage
   dependsOn: ConfigureAWSCredentials
   steps:
