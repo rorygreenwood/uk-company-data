@@ -4,11 +4,11 @@ FROM python:3.11
 WORKDIR .
 
 # copy files needed for process
-COPY main.py .
-COPY section_3_funcs.py .
-COPY fragment_work.py .
-COPY ch_files .
-COPY ch_fragments .
+COPY main.py main.py
+COPY section_3_funcs.py section_3_funcs.py
+COPY fragment_work.py fragment_work.py
+COPY ch_files ch_files
+COPY ch_fragments ch_fragments
 
 # set up args
 ARG aws-access-key-id-data-services

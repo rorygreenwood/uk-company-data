@@ -25,7 +25,7 @@ jobs:
   steps:
     - checkout: self
     - script: |
-        export aws-access-key-id-data-services=$(aws-access-key-id-data-services) #
+        export aws-access-key-id-data-services=$(aws-access-key-id-data-services)
         export aws-secret-key=$(aws-secret-key-data-services)
         export aws-region=$(aws-region)
         export preprod-host=$(preprod-host)
