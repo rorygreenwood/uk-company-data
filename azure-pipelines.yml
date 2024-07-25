@@ -1,12 +1,16 @@
 trigger:
 - master
 variables:
-- group: aws-credential-group
+- group: aws-access-credentials
 - name: imageName
   value: 'companies-house-pipeline-container'
 pool:
   vmImage: 'ubuntu-latest'
 jobs:
+- job: EchoVariables
+  steps:
+    - script: |
+        echo original access key credentials $(aws-access-key-id-original-tenant)
 - job: ConfigureAWSCredentials
   steps:
     - script: |
