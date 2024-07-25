@@ -24,7 +24,7 @@ from section_3_funcs import *
 cursor, db = connect_preprod()
 
 
-def fragment_file(file_name: str, output_dir: str = 'file_downloader/files/fragments/') -> None:
+def fragment_file(file_name: str, output_dir: str = 'ch_fragments/') -> None:
     """
     divides a given file into the given output_dir str variable,
     specifically fragments into lines of 49,999 with a header row
@@ -48,15 +48,15 @@ def custom_sort_key(file_path) -> int:
     return number
 
 
-def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('tdsynnex-sftp-bucket-url')) -> str:
+def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('aws-tdsynnex-sftp-bucket-url')) -> str:
     """
     unzips a given file_to_download into the output directory specified - and then sends zip file to s3 bucket
     :param s3_url:
     :param file_name:
     :return: file_name.replace('.zip', '.csv')
     """
-    filepath = f'file_downloader/files/latest_ch_file/{file_name}'
-    output_directory = 'file_downloader/files/latest_ch_file_unzipped'
+    filepath = f'ch_files/latest_ch_file/{file_name}'
+    output_directory = 'ch_files/latest_ch_file_unzipped'
     with zipfile.ZipFile(filepath, 'r') as zip_ref:
         zip_ref.extractall(output_directory)
     subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')  # subprocess also removes file
@@ -77,6 +77,7 @@ def collect_companieshouse_file(file_to_download: str) -> str:
                        verify=False)
     req.encoding = 'utf-8'
     logger.info(file_to_download, ' to download')
+
     with open('file_downloader/files' + file_to_download, 'wb') as fd:
         logger.info('commencing downloads')
         chunkcount = 0
@@ -85,6 +86,7 @@ def collect_companieshouse_file(file_to_download: str) -> str:
             fd.write(chunk)
             if chunkcount % 100 == 0:
                 logger.info(chunkcount)
+
     logger.info('collect_companies_house_file_complete')
     return file_to_download
 
@@ -147,7 +149,7 @@ def process_section_1() -> None:
                                    verify=False)
                 req.encoding = 'utf-8'
                 logger.info(f'{file_to_download} to download')
-                with open('file_downloader/files/' + file_to_download, 'wb') as fd:
+                with open('ch_files/' + file_to_download, 'wb') as fd:
                     chunkcount = 0
                     for chunk in req.iter_content(chunk_size=100000):
                         chunkcount += 1
@@ -157,32 +159,25 @@ def process_section_1() -> None:
                 logger.info('collect_companies_house_file_complete')
 
                 # 5a. unzip file and send .zip to s3
-                filepath = f'file_downloader/files/{file_to_download}'
-                output_directory = 'file_downloader/files/'
+                filepath = f'ch_files/{file_to_download}'
+                output_directory = 'ch_files/'
                 with zipfile.ZipFile(filepath, 'r') as zip_ref:
                     zip_ref.extractall(output_directory)
-                subprocess.run(f'aws s3 mv {file_to_download} {os.environ.get("tdsynnex-sftp-bucket-url")} {file_to_download}')
+
+                # todo this should be replaced with a boto3 client
+                # subprocess.run(f'aws s3 mv {file_to_download} {os.environ.get("tdsynnex-sftp-bucket-url")} {file_to_download}')
 
                 # fragment file
-                fragment_file(file_name=f'file_downloader/files/{file_to_download.replace(".zip", ".csv")}',
-                              output_dir='file_downloader/files/fragments/')
+                fragment_file(file_name=f'ch_files/{file_to_download.replace(".zip", ".csv")}',
+                              output_dir='ch_fragments/')
 
                 # move fragments to s3 bucket
-                list_of_fragments = os.listdir('file_downloader/files/fragments/')
+                list_of_fragments = os.listdir('ch_fragments/')
 
                 # 7a. calculate number of rows in file, and then send the number to iqblade.companies_house_rowcounts
                 path_objects = [pathlib.Path(f) for f in list_of_fragments]
                 csv_files = list(filter(lambda path: path.suffix == '.csv', path_objects))
-                # sorted_csv_files = sorted(csv_files, key=custom_sort_key)
-                # logger.info(sorted_csv_files)
-                # count_of_full_fragments = len(csv_files) - 1
-                # fragment_count = count_of_full_fragments * 49999
-                #
-                # # for the final file, we assume it has a rowcount <50,000.
-                # # we read the csv and get it's length
-                # final_file_df = pd.read_csv(f'file_downloader/files/fragments/{sorted_csv_files[-1]}')
-                # fragment_count = fragment_count - len(final_file_df)
-                # logger.info('fragment count: {}'.format(fragment_count))
+
 
 
 def process_section_2() -> None:
@@ -200,14 +195,14 @@ def process_section_2() -> None:
     global file_date
     monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
     # 1. list fragments found in s3 bucket
-    for file_fragment in os.listdir('file_downloader/files/fragments'):
+    for file_fragment in os.listdir('ch_fragments'):
         # check if the file has already been processed in the past, if it has it will be in this table
         # if it is not in the table, then we can assume it has not been parsed and can continue to process it
         if file_fragment.endswith('.csv'):
-            fragments_abspath = os.path.abspath('file_downloader/files/fragments')
+            fragments_abspath = os.path.abspath('ch_fragments')
             fragment_file_path = f'{fragments_abspath}/{file_fragment}'
             logger.info('parsing {}'.format(file_fragment))
-            fragment = 'file_downloader/files/fragments/{}'.format(file_fragment)
+            fragment = 'ch_fragments/{}'.format(file_fragment)
 
             # 2a. for each fragment, call parse_fragment() function to upsert to iqblade.raw_companies_house_input_staging
             parse_fragment_pl(fragment_file_path, cursor=cursor, cursordb=db)
@@ -219,7 +214,7 @@ def process_section_2() -> None:
             # monthly_df = pd.concat([monthly_df, df_counts], axis=0)
 
             # 2c. remove file from local and s3 bucket
-            os.remove(f'file_downloader/files/fragments/{file_fragment}')
+            os.remove(f'ch_fragments/{file_fragment}')
         else:
             pass
 
@@ -246,5 +241,5 @@ def process_section_3() -> None:
 if __name__ == '__main__':
     cursor, db = connect_preprod()
     process_section_1()
-    process_section_2() # todo currently in test, make sure writing to correct tables
-    process_section_3() # todo currently in test, make sure writing to correct tables
+    process_section_2()
+    process_section_3()

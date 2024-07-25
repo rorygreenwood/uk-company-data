@@ -4,7 +4,7 @@ variables:
 - group: aws-access-credentials
 - group: preprod-connection-group
 - name: serviceToPush
-  value: 'companies-house-pipeline' # change this dependent on what the ecr repo is to be called
+  value: 'companies-house-pipeline-container' # change this dependent on what the ecr repo is to be called
 pool:
   vmImage: 'ubuntu-latest'
 jobs:
@@ -16,8 +16,8 @@ jobs:
       displayName: Install dependencies
     - script: |
         mkdir .aws
-        echo "[default]\naws_access_key_id=$(AWS_ACCESS_KEY_ID)\naws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" > ~/.aws/credentials
-        aws configure set region $(AWS_REGION)
+        echo "[default]\naws_access_key_id=$(aws-access-key-id-data-services)\naws_secret_access_key=$(aws-secret-key-data-services)" > ~/.aws/credentials
+        aws configure set region $(aws-region)
         $(aws ecr get-login --no-include-email)
       displayName: Signing into AWS ECR
 - job: BuildAndPushDockerimage
@@ -25,13 +25,13 @@ jobs:
   steps:
     - checkout: self
     - script: |
-        export aws-access-key-id=$(AWS_ACCESS_KEY_ID)
-        export aws-secret-key=$(AWS_SECRET_ACCESS_KEY)
-        export eu-west-1=$(AWS_REGION)
-        export preprod-host=$(DB_HOST)
-        export preprod-admin-user=$(DB_USERNAME)
-        export preprod-admin-pass=$(DB_PASSWORD)
-        export preprod-database=$(DB_DATABASE)
+        export aws-access-key-id-data-services=$(aws-access-key-id-data-services) #
+        export aws-secret-key=$(aws-secret-key-data-services)
+        export aws-region=$(aws-region)
+        export preprod-host=$(preprod-host)
+        export preprod-admin-user=$(preprod-admin-user) 
+        export preprod-admin-pass=$(preprod-admin-pass)
+        export preprod-database=$(preprod-database)
       displayName: 'Adding environment variables for AWS'
     - task: Docker@2
       displayName: 'Building the pipeline-companies-house image'
@@ -39,14 +39,15 @@ jobs:
         repository: $(serviceToPush)
         command: 'build'
         Dockerfile: './Dockerfile'
+        # do we need a aws-region arg?
         arguments: |
-          --build-arg AWS_ACCESS_KEY_ID=$(AWS_ACCESS_KEY_ID) 
-          --build-arg AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY) 
-          --build-arg AWS_REGION=$(AWS_REGION)  
-          --build-arg DB_HOST=$(DB_HOST) 
-          --build-arg DB_USERNAME=$(DB_USERNAME) 
-          --build-arg DB_PASSWORD=$(DB_PASSWORD) 
-          --build-arg prepod-database=$(PREPROD_DATABASE)
+          --build-arg aws-access-key-id=$(aws-access-key-id) 
+          --build-arg aws-secret-key=$(aws-secret-key) 
+          --build-arg aws-region=$(aws-region)
+          --build-arg preprod-host=$(preprod-host) 
+          --build-arg preprod-admin-user=$(preprod-admin-user) 
+          --build-arg preprod-admin-pass=$(preprod-admin-pass) 
+          --build-arg prepod-database=$(preprod-database)
         buildContext: .
         tags: |
           latest

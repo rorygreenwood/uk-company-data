@@ -1,12 +1,10 @@
-import datetime
-import os
+import logging
 
 import pandas as pd
 import polars as pl
 
-from utils import timer, connect_preprod, remove_non_numeric, companies_house_conversion_dict, sic_code_conversion_dict
-from testing_files.postcode_finder import collect_postcode, county_populated_new, return_split
-import logging
+from utils import timer, connect_preprod, constring, remove_non_numeric, companies_house_conversion_dict, \
+    sic_code_conversion_dict
 
 logger = logging.getLogger()
 logging.basicConfig(level=logging.INFO,
@@ -14,11 +12,6 @@ logging.basicConfig(level=logging.INFO,
 
 
 cursor, db = connect_preprod()
-host: str = os.environ.get('PREPRODHOST')
-user: str = os.environ.get('ADMINUSER')
-passwd: str = os.environ.get('ADMINPASS')
-db: str = os.environ.get('DATABASE')
-constring = f'mysql://{user}:{passwd}@{host}:3306/{db}'
 
 def parse_fragment_pl(fragment: str, cursor, cursordb):
     dfpl = pl.read_csv(fragment, ignore_errors=True)

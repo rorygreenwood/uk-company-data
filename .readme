@@ -1,0 +1,42 @@
+Objective
+The objective of CompaniesHouse_DataTransfer is to take the latest companies house file
+and write it into preprod, where the data it provides can be upserted into other tables
+that are visible on the front end.
+
+Section 1: Downloading and Fragmenting the File
+1. Send a request to the companies house data product page
+2. using regex, find the link that provides the file in it's entirety
+3. compare this string to companies_house_filetracker records, if that file does not
+   exist, we assume it has not been processed
+4. download the file, unzip the file
+5. use the enrich_csv() function to increase number of post codes and counties
+5.and use the Split library to divide it into
+   csv files of 50,000 rows. These are known as fragments
+5. collect the first record of rowcounts within the file using
+    49,999 * {number of fragments-1} + {size of final fragment}
+6. each fragment is then sent to s3 bucket `iqblade-data-services-companieshouse-fragments`
+7. the original .zip file is sent to s3 bucket `iqblade-data-servives-tdsynnex-sftp/home/tdsynnex` for DSIL team
+8. update the companies_house_filetracker, marking section 1 as complete by setting the section1 column value from null to the current date.
+9. DEVELOPMENT use the boto3 library to collect the lengths of how many
+
+Section 2: Downloading and Parsing fragments
+1. download a fragment in the s3 bucket `iqblade-data-services-companieshouse-fragments`
+2. use pandas to clean data and add new columns to fit scheme of raw_companies_house_input_staging (rchis)
+3. send the csv file, using to_csv() to send it to raw_companies_house_input_staging_df
+4. execute mysql upsert query from df table to rchis
+5. remove the fragment from the s3 bucket
+5. repeat 1-5 until there are no fragments left
+
+Section 3: Upsert Queries
+1. Update rchis with organisation ids as UK + company_number
+2. upsert organisation, setting company name equal to name in rchis based on organisation id
+3. upsert organisation, setting activity equal to rchis.activity based on organisation id
+4. write excess rows to organisation
+5. update rchis so that there are no null values for postcode
+6. generate md5_hash for geo_location data, made with organisation_id and postcode
+7. upsert addresses into geo_location. on a duplicate md5, change address type to head office
+8. delete duplicate head offices for companies using a rank query, partitioning by organisation id and ordering by
+    id, the record with the lower id is assumed to be the older head office and removed
+9. upsert query into sic code from rchis, using a union select query for the four columns that contain sic_code data
+10. perform a count(*) on sic_code, based on whether they were updated in the current month, insert these numbers (grouped by sic_code) into sic_code_counts
+11. calculate differences between sic code counts from the current month with counts from the previous month
