@@ -11,6 +11,13 @@ jobs:
 - job: ConfigureAWSCredentials
   steps:
     - script: |
+        export aws-access-key-id-data-services=$(aws-access-key-id-data-services)
+        export aws-secret-key=$(aws-secret-key-data-services)
+        export aws-region=$(aws-region)
+        export aws-access-key-id-original-tenant=$(aws-access-key-id-original-tenant)
+        export aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
+      displayName: set AWS credentials
+    - script: |
         sudo pip3 install setuptools
         sudo pip3 install --upgrade awscli
       displayName: Install dependencies
@@ -25,14 +32,6 @@ jobs:
   steps:
     - checkout: self
     - script: |
-        
-        export aws-access-key-id-data-services=$(aws-access-key-id-data-services)
-        export aws-secret-key=$(aws-secret-key-data-services)
-        
-        export aws-access-key-id-original-tenant=$(aws-access-key-id-original-tenant)
-        export aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
-        
-        export aws-region=$(aws-region)
         export preprod-host=$(preprod-host)
         export preprod-admin-user=$(preprod-admin-user) 
         export preprod-admin-pass=$(preprod-admin-pass)
