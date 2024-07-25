@@ -16,7 +16,7 @@ jobs:
       displayName: Install dependencies
     - script: |
         mkdir .aws
-        echo "[default]\naws_access_key_id=$(aws-access-key-id-data-services)\naws_secret_access_key=$(aws-secret-key-data-services)" > ~/.aws/credentials
+        echo "[default]\naws_access_key_id=$(aws-access-key-original-tenant)\naws_secret_access_key=$(aws-secret-key-original-tenant)" > ~/.aws/credentials
         aws configure set region $(aws-region)
         $(aws ecr get-login --no-include-email)
       displayName: Signing into AWS ECR
