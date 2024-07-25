@@ -193,7 +193,9 @@ def process_section_2() -> None:
     """
 
     global file_date
-    monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
+    # monthly_df variable needed for sic_counts project, which isn't in use at the moment.
+    # monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
+
     # 1. list fragments found in s3 bucket
     for file_fragment in os.listdir('ch_fragments'):
         # check if the file has already been processed in the past, if it has it will be in this table
