@@ -20,6 +20,7 @@ jobs:
     - script: |
         mkdir .aws
         mkdir .aws/credentials
+        ls .aws
         echo aws dir has been made!
         echo $(aws-access-key-id-original-tenant)
         echo "[default]\naws_access_key_id=$(aws-access-key-id-original-tenant)\naws_secret_access_key=$(aws-secret-key-original-tenant)" > ~/.aws/credentials
