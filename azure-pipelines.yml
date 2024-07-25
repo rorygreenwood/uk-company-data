@@ -2,6 +2,7 @@ trigger:
 - master
 variables:
 - group: aws-access-credentials
+- group: aws-credential-group
 - name: imageName
   value: 'companies-house-pipeline-container'
 pool:
@@ -19,10 +20,8 @@ jobs:
       displayName: Install dependencies
     - script: |
         mkdir .aws
-        echo $(aws-access-key-id-original-tenant) echoing to make sure the yaml file can call it
-        echo $(aws-secret-key-original-tenant) echoing to make sure the yaml file can call it
-        echo "[default]\naws_access_key_id=$(aws-access-key-id-original-tenant)\naws_secret_access_key=$(aws-secret-key-original-tenant)" > ~/.aws/credentials
-        aws configure set region $(aws-region)
+        echo "[default]\naws_access_key_id=$(AWS_ACCESS_KEY_ID)\naws_secret_access_key=$(AWS_SECRET_ACCESS_KEY)" > ~/.aws/credentials
+        aws configure set region $(AWS_REGION)
         $(aws ecr get-login --no-include-email)
       displayName: Signing into AWS ECR
     - script: echo dir generation for aws complete
