@@ -19,16 +19,13 @@ jobs:
       displayName: Install dependencies
     - script: |
         mkdir .aws
-        mkdir .aws/credentials
-        ls .aws
-        echo aws dir has been made!
-        echo $(aws-access-key-id-original-tenant)
-        echo $(aws-secret-key-original-tenant)
+        echo $(aws-access-key-id-original-tenant) echoing to make sure the yaml file can call it
+        echo $(aws-secret-key-original-tenant) echoing to make sure the yaml file can call it
         echo "[default]\naws_access_key_id=$(aws-access-key-id-original-tenant)\naws_secret_access_key=$(aws-secret-key-original-tenant)" > ~/.aws/credentials
         aws configure set region $(aws-region)
         $(aws ecr get-login --no-include-email)
       displayName: Signing into AWS ECR
-    - script: echo file complete!
+    - script: echo dir generation for aws complete
       displayName: Confirmation of AWS Credentials
 - job: BuildAndPushDockerimage
   dependsOn: ConfigureAWSCredentials
