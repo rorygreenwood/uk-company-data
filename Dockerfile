@@ -36,6 +36,7 @@ ENV aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
 
 
 ENV preprod-admin-user=$(preprod-admin-user)
+RUN echo "new variable: $preprod-admin-user"
 ENV preprod-admin-pass=$(preprod-admin-pass)
 ENV preprod-database=$(preprod-database)
 ENV preprod-host=$(preprod-host)

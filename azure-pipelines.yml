@@ -35,8 +35,12 @@ jobs:
         export AWS_SECRET_ACCESS_KEY=$(AWS_SECRET_ACCESS_KEY)
         export AWS_REGION=$(AWS_REGION)
       displayName: 'Adding environment variables for AWS'
+    - script: |
+        export preprod-admin-user=$(preprod-connection-group.preprod-admin-user)
+    - script: echo added new variable from $(preprod-connection-group.preprod-admin-user)
+      displayName: 'adding new variable'
     - task: Docker@2
-      displayName: 'Building the french_financials image'
+      displayName: 'Building the companies-house-container image'
       inputs:
         repository: $(imageName)
         command: 'build'
