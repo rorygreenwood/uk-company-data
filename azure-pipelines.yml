@@ -1,7 +1,7 @@
 trigger:
 - master
 variables:
-- group: aws-credential-group-pdy
+- group: aws-credential-group-original-tenant
 - group: preprod-connection-group
 - name: imageName
   value: 'companies-house-pipeline-container'
