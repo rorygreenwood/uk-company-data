@@ -1,4 +1,5 @@
 FROM python:3.11
+LABEL authors="T199811E"
 
 # set working directory (the same directory as the Dockerfile)
 WORKDIR .
@@ -36,7 +37,7 @@ ENV aws-secret-key-original-tenant=$(aws-secret-key-original-tenant)
 
 
 ENV preprod-admin-user=$(preprod-admin-user)
-RUN echo "new variable: $preprod-admin-user"
+
 ENV preprod-admin-pass=$(preprod-admin-pass)
 ENV preprod-database=$(preprod-database)
 ENV preprod-host=$(preprod-host)
