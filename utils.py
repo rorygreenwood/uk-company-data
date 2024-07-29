@@ -161,7 +161,7 @@ def pipeline_messenger(title, text, hexcolour_value):
     }
     requests.request("POST", url, headers=headers, data=payload)
 
-def ch_file_s3_send(file_name, s3_url=os.environ.get('S3_TDSYNNEX_SFTP_BUCKET_URL')):
+def ch_file_s3_send(file_name, s3_url=os.environ.get('aws_tdsynnex_sftp_bucket_url')):
     subprocess.run(f'aws s3 mv {file_name} {s3_url} {file_name}')
 
 
@@ -208,10 +208,10 @@ def connect_preprod() -> tuple:
     :return:
     """
     db = mysql.connector.connect(
-        host=os.environ.get('preprod-host'),
-        user=os.environ.get('preprod-admin-user'),
-        passwd=os.environ.get('preprod-admin-pass'),
-        database=os.environ.get('preprod-database'),
+        host=os.environ.get('preprod_host'),
+        user=os.environ.get('preprod_admin_user'),
+        passwd=os.environ.get('preprod_admin_pass'),
+        database=os.environ.get('preprod_database'),
     )
 
     cursor = db.cursor()
@@ -225,10 +225,10 @@ def connect_preprod_readonly() -> tuple:
     :return:
     """
     db = mysql.connector.connect(
-        host=os.environ.get('preprod-readonly-host'),
-        user=os.environ.get('preprod-admin-user'),
-        passwd=os.environ.get('preprod-admin-pass'),
-        database=os.environ.get('preprod-database'),
+        host=os.environ.get('preprod_readonly_host'),
+        user=os.environ.get('preprod_admin_user'),
+        passwd=os.environ.get('preprod_admin_pass'),
+        database=os.environ.get('preprod_database'),
     )
 
     cursor = db.cursor()
@@ -570,8 +570,8 @@ companies_house_conversion_dict = {companies_house_file_csv_columns[i]: companie
 
 def create_s3_connection() -> boto3.client:
     s3client = boto3.client('s3',
-                            aws_access_key_id=os.environ.get('aws-access-key-id'),
-                            aws_secret_access_key=os.environ.get('aws-secret-key'),
+                            aws_access_key_id=os.environ.get('aws_access_key_id_data_services'),
+                            aws_secret_access_key=os.environ.get('aws-secret-key_data_services'),
                             region_name='eu-west-1'
                             )
     buckets = s3client.list_buckets()

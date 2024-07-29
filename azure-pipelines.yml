@@ -37,7 +37,7 @@ jobs:
       displayName: 'Adding environment variables for AWS'
     - script: |
         export preprod_admin_user=$(preprod-admin-user)
-      displayName: 'adding new variable for admin suer'
+      displayName: 'adding new variable for admin user'
     - script: echo added new variable from $(preprod-admin-user)
       displayName: 'adding new variable'
     - task: Docker@2
