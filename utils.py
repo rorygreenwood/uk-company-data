@@ -18,10 +18,10 @@ logging.basicConfig(level=logging.INFO,
                     format='%(filename)s line:%(lineno)d %(message)s')
 
 constring = "mysql://{}:{}@{}:3306/{}".format(
-    os.environ.get('preprod-admin-user'),
-    os.environ.get('preprod-admin-pass'),
-    os.environ.get('preprod-host'),
-    os.environ.get('preprod-database')
+    os.environ.get('preprod_admin_user'),
+    os.environ.get('preprod_admin_pass'),
+    os.environ.get('preprod_host'),
+    os.environ.get('preprod_database')
 )
 
 
