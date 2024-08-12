@@ -472,17 +472,17 @@ select TRIM(SUBSTRING_INDEX(sic_text_2,'-',1)) as code,
        CURDATE() as date_last_modified
 from raw_companies_house_input_stage rchis
 union
-select TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)) as code,
+select TRIM(SUBSTRING_INDEX(sic_text_3,'-',1)) as code,
        concat('UK', company_number),
        rchis.company_number as company_number,
-       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_3,'-',1)))) as md5,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_3,'-',1)))) as md5,
        CURDATE() as date_last_modified
 from raw_companies_house_input_stage rchis
 union
-select TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)) as code,
+select TRIM(SUBSTRING_INDEX(sic_text_4,'-',1)) as code,
        concat('UK', company_number),
        rchis.company_number as company_number,
-       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(SICCode_SicText_4,'-',1)))) as md5,
+       MD5(CONCAT(rchis.company_number, TRIM(SUBSTRING_INDEX(sic_text_4,'-',1)))) as md5,
        CURDATE() as date_last_modified
 from raw_companies_house_input_stage rchis) t1)""")
     db.commit()

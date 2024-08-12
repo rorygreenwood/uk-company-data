@@ -15,6 +15,7 @@ import zipfile
 
 import bs4
 import pandas as pd
+import polars as pl
 import requests
 from filesplit.split import Split
 
@@ -123,23 +124,24 @@ def process_section_1() -> None:
     for i in links:
         file_str_match = re.findall(string=i['href'], pattern=chfile_regex_pattern)
         if len(file_str_match) != 0:
+            file_to_download = file_str_match[0]
             logger.info('regex returned a result')
-            month_re = re.findall(string=file_str_match[0], pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            month_re = re.findall(string=file_to_download, pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
             logger.info(f'monthcheck: {month_re[0]}')
-            logger.info(f'file_str_match: {file_str_match[0]}')
+            logger.info(f'file_str_match: {file_to_download}')
 
             # 3. compare the string to those found in mysql table iqblade.companies_house_filetracker
             cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
-                           (file_str_match[0],))
+                           (file_to_download,))
             result = cursor.fetchall()
             logger.info(result)
 
             # 4a. if there is a string that matches, we assume the file has been processed through section 1 and
             #    close the pipeline
-            if len(result) == 0:
+            if len(result) == 0 and file_str_match not in os.listdir('ch_files'):
                 # download file
                 logger.info('file found to download')
-                file_to_download = file_str_match[0]
+
                 # 4b. if there is no match, we download the file
                 logger.info(f'collect_companieshouse_file called, downloading {file_to_download}')
                 baseurl = 'http://download.companieshouse.gov.uk/' + file_to_download
@@ -158,25 +160,26 @@ def process_section_1() -> None:
                             logger.info(chunkcount)
                 logger.info('collect_companies_house_file_complete')
 
-                # 5a. unzip file and send .zip to s3
-                filepath = f'ch_files/{file_to_download}'
-                output_directory = 'ch_files/'
-                with zipfile.ZipFile(filepath, 'r') as zip_ref:
-                    zip_ref.extractall(output_directory)
+            # 5a. unzip file and send .zip to s3
+            filepath = f'ch_files/{file_to_download}'
+            output_directory = 'ch_files/'
+            with zipfile.ZipFile(filepath, 'r') as zip_ref:
+                zip_ref.extractall(output_directory)
+                output_file = zip_ref.namelist()[0]
 
-                # todo this should be replaced with a boto3 client
-                # subprocess.run(f'aws s3 mv {file_to_download} {os.environ.get("tdsynnex-sftp-bucket-url")} {file_to_download}')
+            # todo this should be replaced with a boto3 client
+            # subprocess.run(f'aws s3 mv {file_to_download} {os.environ.get("tdsynnex-sftp-bucket-url")} {file_to_download}')
 
-                # fragment file
-                fragment_file(file_name=f'ch_files/{file_to_download.replace(".zip", ".csv")}',
-                              output_dir='ch_fragments/')
+            # fragment file
+            fragment_file(file_name=f'ch_files/{file_to_download.replace(".zip", ".csv")}',
+                          output_dir='ch_fragments/')
 
-                # move fragments to s3 bucket
-                list_of_fragments = os.listdir('ch_fragments/')
+            # move fragments to s3 bucket
+            list_of_fragments = os.listdir('ch_fragments/')
 
-                # 7a. calculate number of rows in file, and then send the number to iqblade.companies_house_rowcounts
-                path_objects = [pathlib.Path(f) for f in list_of_fragments]
-                csv_files = list(filter(lambda path: path.suffix == '.csv', path_objects))
+            # 7a. calculate number of rows in file, and then send the number to iqblade.companies_house_rowcounts
+            path_objects = [pathlib.Path(f) for f in list_of_fragments]
+            csv_files = list(filter(lambda path: path.suffix == '.csv', path_objects))
 
 
 
@@ -209,14 +212,8 @@ def process_section_2() -> None:
             # 2a. for each fragment, call parse_fragment() function to upsert to iqblade.raw_companies_house_input_staging
             parse_fragment_pl(fragment_file_path, cursor=cursor, cursordb=db)
 
-            # 2b. for each fragment, call parse_fragment_sic() to contribute to pandas dataframe monthly_df
-            # regex of the fragment to get the file_date value
-            file_date = re.search(string=fragment, pattern='\d{4}-\d{2}-\d{2,3}')[0]
-            # df_counts = parse_fragment_sic(fragment, file_date)
-            # monthly_df = pd.concat([monthly_df, df_counts], axis=0)
-
-            # 2c. remove file from local and s3 bucket
-            os.remove(f'ch_fragments/{file_fragment}')
+            # 2b. remove file from local and s3 bucket
+            # os.remove(f'ch_fragments/{file_fragment}')
         else:
             pass
 
@@ -242,6 +239,6 @@ def process_section_3() -> None:
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()
-    process_section_1()
+    # process_section_1()
     process_section_2()
     process_section_3()

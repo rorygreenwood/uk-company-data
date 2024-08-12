@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO,
 cursor, db = connect_preprod()
 
 def parse_fragment_pl(fragment: str, cursor, cursordb):
-    dfpl = pl.read_csv(fragment, ignore_errors=True)
+    dfpl = pl.read_csv(fragment, ignore_errors=False)
     logger.info(dfpl.columns)
     dfpl = dfpl.rename(companies_house_conversion_dict)
 
@@ -24,10 +24,132 @@ def parse_fragment_pl(fragment: str, cursor, cursordb):
     cursordb.commit()
     logger.info('writing to staging table')
     dfpl.write_database(table_name='raw_companies_house_input_stage_df', if_exists='append', connection_uri=constring)
-
     logger.info('inserting into company table')
     cursor.execute("""insert into raw_companies_house_input_stage
-    select * from raw_companies_house_input_stage_df t2
+    (
+    company_name, 
+    company_number, 
+    RegAddress_CareOf, 
+    RegAddress_POBox, 
+    reg_address_line1, 
+    reg_address_line2, 
+    reg_address_posttown, 
+    reg_address_county, 
+    RegAddress_Country, 
+    reg_address_postcode, 
+    CompanyCategory, 
+    company_status, 
+    country_of_origin, 
+    DissolutionDate, 
+    IncorporationDate, 
+    Accounts_AccountRefDay, 
+    Accounts_AccountRefMonth, 
+    Accounts_NextDueDate, 
+    Accounts_LastMadeUpDate, 
+    Accounts_AccountCategory, 
+    Returns_NextDueDate, 
+    Returns_LastMadeUpDate, 
+    Mortgages_NumMortCharges, 
+    Mortgages_NumMortOutstanding, 
+    Mortgages_NumMortPartSatisfied, 
+    Mortgages_NumMortSatisfied, 
+    sic_text_1, 
+    sic_text_2, 
+    sic_text_3, 
+    sic_text_4, 
+    LimitedPartnerships_NumGenPartners, 
+    LimitedPartnerships_NumLimPartners, 
+    URI, 
+    PreviousName_1_CONDATE, 
+    PreviousName_1_CompanyName, 
+    PreviousName_2_CONDATE, 
+    PreviousName_2_CompanyName, 
+    PreviousName_3_CONDATE, 
+    PreviousName_3_CompanyName, 
+    PreviousName_4_CONDATE, 
+    PreviousName_4_CompanyName, 
+    PreviousName_5_CONDATE, 
+    PreviousName_5_CompanyName, 
+    PreviousName_6_CONDATE, 
+    PreviousName_6_CompanyName, 
+    PreviousName_7_CONDATE, 
+    PreviousName_7_CompanyName, 
+    PreviousName_8_CONDATE, 
+    PreviousName_8_CompanyName, 
+    PreviousName_9_CONDATE, 
+    PreviousName_9_CompanyName, 
+    PreviousName_10_CONDATE, 
+    PreviousName_10_CompanyName, 
+    ConfStmtNextDueDate, 
+    ConfStmtLastMadeUpDate, 
+    phone_number, 
+    number_of_employees, 
+    organisation_id, 
+    last_modified_date, 
+    last_modified_by) 
+    select 
+    company_name, 
+    company_number, 
+    RegAddress_CareOf, 
+    RegAddress_POBox, 
+    reg_address_line1, 
+    reg_address_line2, 
+    reg_address_posttown, 
+    reg_address_county, 
+    RegAddress_Country, 
+    reg_address_postcode, 
+    CompanyCategory, 
+    company_status, 
+    country_of_origin, 
+    DissolutionDate, 
+    IncorporationDate, 
+    Accounts_AccountRefDay, 
+    Accounts_AccountRefMonth, 
+    Accounts_NextDueDate, 
+    Accounts_LastMadeUpDate, 
+    Accounts_AccountCategory, 
+    Returns_NextDueDate, 
+    Returns_LastMadeUpDate, 
+    Mortgages_NumMortCharges, 
+    Mortgages_NumMortOutstanding, 
+    Mortgages_NumMortPartSatisfied, 
+    Mortgages_NumMortSatisfied, 
+    sic_text_1, 
+    sic_text_2, 
+    sic_text_3, 
+    sic_text_4, 
+    LimitedPartnerships_NumGenPartners, 
+    LimitedPartnerships_NumLimPartners, 
+    URI, 
+    PreviousName_1_CONDATE, 
+    PreviousName_1_CompanyName, 
+    PreviousName_2_CONDATE, 
+    PreviousName_2_CompanyName, 
+    PreviousName_3_CONDATE, 
+    PreviousName_3_CompanyName, 
+    PreviousName_4_CONDATE, 
+    PreviousName_4_CompanyName, 
+    PreviousName_5_CONDATE, 
+    PreviousName_5_CompanyName, 
+    PreviousName_6_CONDATE, 
+    PreviousName_6_CompanyName, 
+    PreviousName_7_CONDATE, 
+    PreviousName_7_CompanyName, 
+    PreviousName_8_CONDATE, 
+    PreviousName_8_CompanyName, 
+    PreviousName_9_CONDATE, 
+    PreviousName_9_CompanyName, 
+    PreviousName_10_CONDATE, 
+    PreviousName_10_CompanyName, 
+    ConfStmtNextDueDate, 
+    ConfStmtLastMadeUpDate, 
+    phone_number, 
+    number_of_employees, 
+    concat('UK', company_number),
+    now(), 
+    concat('ch insert', %s)
+    from raw_companies_house_input_stage_df t2
+    # where  is not null
     on duplicate key update 
     raw_companies_house_input_stage.company_name = t2.company_name,
     raw_companies_house_input_stage.RegAddress_CareOf = t2.RegAddress_CareOf,
@@ -56,8 +178,8 @@ def parse_fragment_pl(fragment: str, cursor, cursordb):
     raw_companies_house_input_stage.Mortgages_NumMortSatisfied = t2.Mortgages_NumMortSatisfied,
     raw_companies_house_input_stage.sic_text_1 = t2.sic_text_1,
     raw_companies_house_input_stage.sic_text_2 = t2.sic_text_2,
-    raw_companies_house_input_stage.SICCode_SicText_3 = t2.SICCode_SicText_3,
-    raw_companies_house_input_stage.SICCode_SicText_4 = t2.SICCode_SicText_4,
+    raw_companies_house_input_stage.sic_text_3 = t2.sic_text_3,
+    raw_companies_house_input_stage.sic_text_4 = t2.sic_text_4,
     raw_companies_house_input_stage.LimitedPartnerships_NumGenPartners = t2.LimitedPartnerships_NumGenPartners,
     raw_companies_house_input_stage.LimitedPartnerships_NumLimPartners = t2.LimitedPartnerships_NumLimPartners,
     raw_companies_house_input_stage.URI = t2.URI,
@@ -87,9 +209,16 @@ def parse_fragment_pl(fragment: str, cursor, cursordb):
     raw_companies_house_input_stage.SourceFile = t2.SourceFile,
     raw_companies_house_input_stage.phone_number = t2.phone_number,
     raw_companies_house_input_stage.number_of_employees = t2.number_of_employees,
-    raw_companies_house_input_stage.md5_key = md5(concat(t2.organisation_id, t2.reg_address_postcode))
-    """)
+    raw_companies_house_input_stage.md5_key = md5(concat(t2.organisation_id, t2.reg_address_postcode)),
+    raw_companies_house_input_stage.last_modified_date = NOW(),
+    raw_companies_house_input_stage.last_modified_by = concat('companies_house_update - ', %s)
+    """, (fragment, fragment))
     cursordb.commit()
+
+    # verify that a change has been made
+    cursor.execute("""select count(*) from raw_companies_house_input_stage where date(last_modified_date) = date(NOW())""")
+    res = cursor.fetchall()
+    logger.info('records: {}'.format(res[0]))
 
     logger.info('truncating staging table')
     # truncate table at the end of process
