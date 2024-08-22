@@ -16,6 +16,7 @@ import zipfile
 import bs4
 import pandas as pd
 import polars as pl
+import boto3
 import requests
 from filesplit.split import Split
 
@@ -24,6 +25,11 @@ from section_3_funcs import *
 
 cursor, db = connect_preprod()
 
+s3_client = boto3.client('s3',
+                         aws_access_key_id=os.environ.get('aws_access_key_id_data_services'), # ...XDH4
+                         aws_secret_access_key=os.environ.get('aws_secret_key_data_services'), # ...wtR
+                         region_name='eu-west-1'
+                         )
 
 def fragment_file(file_name: str, output_dir: str = 'ch_fragments/') -> None:
     """
@@ -43,15 +49,15 @@ def custom_sort_key(file_path) -> int:
     """takes a csv fragment name and finds out what number fragment it is, the fragments will then be ordered by
     this value in order to find the final fragment which is assumed to not have 49,999 rows.
     """
-    file_to_download = file_path.name
-    number = int(file_to_download.split('_')[-1].replace('.csv', ''))
+    zipped_file = file_path.name
+    number = int(zipped_file.split('_')[-1].replace('.csv', ''))
     logger.info(number)
     return number
 
 
 def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('aws-tdsynnex-sftp-bucket-url')) -> str:
     """
-    unzips a given file_to_download into the output directory specified - and then sends zip file to s3 bucket
+    unzips a given zipped_file into the output directory specified - and then sends zip file to s3 bucket
     :param s3_url:
     :param file_name:
     :return: file_name.replace('.zip', '.csv')
@@ -64,22 +70,22 @@ def unzip_ch_file_s3_send(file_name, s3_url=os.environ.get('aws-tdsynnex-sftp-bu
     return file_name.replace('.zip', '.csv')
 
 
-def collect_companieshouse_file(file_to_download: str) -> str:
+def collect_companieshouse_file(zipped_file: str) -> str:
     """
-    downloads a file based on a given file_to_download
-    :param file_to_download:
+    downloads a file based on a given zipped_file
+    :param zipped_file:
     :return:
     """
-    logger.info(f'collect_companieshouse_file called, downloading {file_to_download}')
-    baseurl = 'http://download.companieshouse.gov.uk/' + file_to_download
+    logger.info(f'collect_companieshouse_file called, downloading {zipped_file}')
+    baseurl = 'http://download.companieshouse.gov.uk/' + zipped_file
     logger.info(f'sending request using url: {baseurl}')
     req = requests.get(baseurl,
                        stream=True,
                        verify=False)
     req.encoding = 'utf-8'
-    logger.info(file_to_download, ' to download')
+    logger.info(zipped_file, ' to download')
 
-    with open('file_downloader/files' + file_to_download, 'wb') as fd:
+    with open('file_downloader/files' + zipped_file, 'wb') as fd:
         logger.info('commencing downloads')
         chunkcount = 0
         for chunk in req.iter_content(chunk_size=100000):
@@ -89,7 +95,7 @@ def collect_companieshouse_file(file_to_download: str) -> str:
                 logger.info(chunkcount)
 
     logger.info('collect_companies_house_file_complete')
-    return file_to_download
+    return zipped_file
 
 
 # 1a. find latest file
@@ -107,7 +113,7 @@ def process_section_1() -> None:
     7a. calculate how many rows are found in the files and send that record to iqblade.companies_house_rowcounts
     7b. send the each fragment file to AWS s3
     7c. calculate how many rows in the fragment files in s3
-    8. update iqblade.companies_house_filetracker with new file_to_download, and then that the section1 has been complete
+    8. update iqblade.companies_house_filetracker with new zipped_file, and then that the section1 has been complete
     """
 
     # 1. Send a Request to companies house downloads
@@ -124,15 +130,15 @@ def process_section_1() -> None:
     for i in links:
         file_str_match = re.findall(string=i['href'], pattern=chfile_regex_pattern)
         if len(file_str_match) != 0:
-            file_to_download = file_str_match[0]
+            zipped_file = file_str_match[0]
             logger.info('regex returned a result')
-            month_re = re.findall(string=file_to_download, pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            month_re = re.findall(string=zipped_file, pattern='[0-9]{4}-[0-9]{2}-[0-9]{2}')
             logger.info(f'monthcheck: {month_re[0]}')
-            logger.info(f'file_str_match: {file_to_download}')
+            logger.info(f'file_str_match: {zipped_file}')
 
             # 3. compare the string to those found in mysql table iqblade.companies_house_filetracker
             cursor.execute("""select * from companies_house_filetracker where filename = %s and section1 is not null""",
-                           (file_to_download,))
+                           (zipped_file,))
             result = cursor.fetchall()
             logger.info(result)
 
@@ -143,15 +149,15 @@ def process_section_1() -> None:
                 logger.info('file found to download')
 
                 # 4b. if there is no match, we download the file
-                logger.info(f'collect_companieshouse_file called, downloading {file_to_download}')
-                baseurl = 'http://download.companieshouse.gov.uk/' + file_to_download
+                logger.info(f'collect_companieshouse_file called, downloading {zipped_file}')
+                baseurl = 'http://download.companieshouse.gov.uk/' + zipped_file
                 logger.info(f'sending request using url: {baseurl}')
                 req = requests.get(baseurl,
                                    stream=True,
                                    verify=False)
                 req.encoding = 'utf-8'
-                logger.info(f'{file_to_download} to download')
-                with open('ch_files/' + file_to_download, 'wb') as fd:
+                logger.info(f'{zipped_file} to download')
+                with open('ch_files/' + zipped_file, 'wb') as fd:
                     chunkcount = 0
                     for chunk in req.iter_content(chunk_size=100000):
                         chunkcount += 1
@@ -161,17 +167,21 @@ def process_section_1() -> None:
                 logger.info('collect_companies_house_file_complete')
 
             # 5a. unzip file and send .zip to s3
-            filepath = f'ch_files/{file_to_download}'
+            filepath = f'ch_files/{zipped_file}'
             output_directory = 'ch_files/'
             with zipfile.ZipFile(filepath, 'r') as zip_ref:
                 zip_ref.extractall(output_directory)
                 output_file = zip_ref.namelist()[0]
 
             # todo this should be replaced with a boto3 client
-            # subprocess.run(f'aws s3 mv {file_to_download} {os.environ.get("tdsynnex-sftp-bucket-url")} {file_to_download}')
 
+            # send original zip file to hgdata-incoming-files
+            incoming_files_bucket = 'iqblade-data-services-companieshouse-incoming-files'
+            response = s3_client.upload_file(Filename=zipped_file,
+                                             Bucket=incoming_files_bucket,
+                                             Key=zipped_file)
             # fragment file
-            fragment_file(file_name=f'ch_files/{file_to_download.replace(".zip", ".csv")}',
+            fragment_file(file_name=f'ch_files/{output_file}',
                           output_dir='ch_fragments/')
 
             # move fragments to s3 bucket
@@ -239,6 +249,6 @@ def process_section_3() -> None:
 
 if __name__ == '__main__':
     cursor, db = connect_preprod()
-    # process_section_1()
+    process_section_1()
     process_section_2()
     process_section_3()
