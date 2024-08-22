@@ -13,10 +13,8 @@ import re
 import subprocess
 import zipfile
 
-import bs4
-import pandas as pd
-import polars as pl
 import boto3
+import bs4
 import requests
 from filesplit.split import Split
 
@@ -205,10 +203,6 @@ def process_section_2() -> None:
     :return:
     """
 
-    global file_date
-    # monthly_df variable needed for sic_counts project, which isn't in use at the moment.
-    # monthly_df = pd.DataFrame(columns=['sic_code', 'sic_code_count'])
-
     # 1. list fragments found in s3 bucket
     for file_fragment in os.listdir('ch_fragments'):
         # check if the file has already been processed in the past, if it has it will be in this table
@@ -217,13 +211,12 @@ def process_section_2() -> None:
             fragments_abspath = os.path.abspath('ch_fragments')
             fragment_file_path = f'{fragments_abspath}/{file_fragment}'
             logger.info('parsing {}'.format(file_fragment))
-            fragment = 'ch_fragments/{}'.format(file_fragment)
 
             # 2a. for each fragment, call parse_fragment() function to upsert to iqblade.raw_companies_house_input_staging
             parse_fragment_pl(fragment_file_path, cursor=cursor, cursordb=db)
 
             # 2b. remove file from local and s3 bucket
-            # os.remove(f'ch_fragments/{file_fragment}')
+            os.remove(f'ch_fragments/{file_fragment}')
         else:
             pass
 
