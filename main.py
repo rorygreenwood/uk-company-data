@@ -123,7 +123,6 @@ def process_section_1() -> None:
 
     # 2. collect all links and search them for specified string (chfile_regex_pattenr)
     links = request_content_soup.find_all('a')
-    logger.info(links)
     chfile_regex_pattern = 'BasicCompanyDataAsOneFile-[0-9]{4}-[0-9]{2}-[0-9]{2}\.zip'
     for i in links:
         file_str_match = re.findall(string=i['href'], pattern=chfile_regex_pattern)
