@@ -1,7 +1,7 @@
 trigger:
 - master
 variables:
-- group: aws-credential-group-original-tenant
+- group: aws-credentials-original-tenant-data-services-access
 - group: preprod-connection-group
 - name: imageName
   value: 'companies-house-pipeline-container'
@@ -12,7 +12,6 @@ jobs:
   steps:
     - script: |
         echo $(AWS_ACCESS_KEY_ID)
-        echo $(AWS_SECRET_ACCESS_KEY)
       displayName: Printing Credentials
 - job: ConfigureAWSCredentials
   steps:
