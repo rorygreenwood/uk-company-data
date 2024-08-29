@@ -12,12 +12,14 @@ jobs:
   steps:
     - script: |
         echo $(AWS_ACCESS_KEY_ID)
+        echo $(AWS_SECRET_ACCESS_KEY)
       displayName: Printing Credentials
 - job: ConfigureAWSCredentials
   steps:
     - script: |
         sudo pip3 install setuptools
         sudo pip3 install --upgrade awscli
+        echo "finished dependencies"
       displayName: Install dependencies
     - script: |
         mkdir .aws
